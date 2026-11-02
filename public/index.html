@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#020617">
+  <meta name="description" content="Cuentos personalizados con valores para la hora de dormir.">
+  <title>Cuentos Mágicos</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center p-3 font-sans antialiased">
+
+  <div class="w-full max-w-md mx-auto my-2">
+    <header class="text-center mb-4">
+      <h1 class="text-2xl font-bold tracking-tight text-amber-300">🌙 Cuentos Mágicos</h1>
+      <p class="text-xs text-slate-400 mt-0.5">Historias personalizadas con valores para dormir</p>
+    </header>
+
+    <!-- FORMULARIO -->
+    <main id="creator-view" class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-3.5">
+      <div id="quota-badge" class="hidden text-center text-[11px] font-medium py-1 px-3 rounded-full border"></div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label for="child-name" class="field-label">Nombre niño/a</label>
+          <input type="text" id="child-name" maxlength="40" placeholder="Ej. Lucía" autocomplete="off" class="field">
+        </div>
+        <div>
+          <label for="child-age" class="field-label">Edad</label>
+          <input type="number" id="child-age" value="5" min="2" max="10" class="field">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label for="companion-name" class="field-label">Acompañante</label>
+          <input type="text" id="companion-name" maxlength="40" placeholder="Ej. Papá / Hermano" autocomplete="off" class="field">
+        </div>
+        <div>
+          <label for="pet-toy" class="field-label">Animal o juguete</label>
+          <input type="text" id="pet-toy" maxlength="40" placeholder="Ej. Peluche Rex / Gatito" autocomplete="off" class="field">
+        </div>
+      </div>
+
+      <div>
+        <label for="story-lesson" class="field-label">Moraleja o valor</label>
+        <select id="story-lesson" class="field text-xs">
+          <option value="dark">Perder el miedo a la oscuridad</option>
+          <option value="share">Aprender a compartir y generosidad</option>
+          <option value="patience">La paciencia y saber esperar</option>
+          <option value="kindness">Amabilidad y hacer nuevos amigos</option>
+          <option value="gratitude">Gratitud y valorar el día</option>
+        </select>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="field-label mb-0">Tiempo de lectura</span>
+          <span class="text-[10px] text-amber-400 font-medium" id="time-hint"></span>
+        </div>
+        <div id="duration-options" class="grid grid-cols-4 gap-2 text-xs"></div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="field-label mb-0">Estilo de ilustración</span>
+          <span class="text-[10px] text-amber-400 font-medium" id="style-hint"></span>
+        </div>
+        <div id="style-options" class="grid grid-cols-2 gap-2 text-xs"></div>
+      </div>
+
+      <section id="voices-section" class="border border-slate-800 rounded-2xl p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="field-label mb-0">Voces de la familia <span class="text-purple-300">👑 VIP</span></span>
+          <button id="add-voice-btn" type="button" class="text-[11px] text-amber-400 hover:underline">+ Añadir voz</button>
+        </div>
+        <p id="voices-empty" class="text-[11px] text-slate-500">Graba a papá, mamá, los abuelos o los tíos y que el cuento se lea con su voz.</p>
+        <ul id="voices-list" class="flex flex-wrap gap-2"></ul>
+      </section>
+
+      <button id="generate-btn" type="button" class="w-full bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-slate-950 font-bold py-3.5 rounded-2xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+        <span id="generate-label">✨ Generar cuento mágico</span>
+      </button>
+
+      <div id="loader" class="hidden text-center py-4 space-y-2" role="status">
+        <div class="inline-block animate-spin rounded-full h-7 w-7 border-4 border-amber-400 border-t-transparent"></div>
+        <p class="text-xs text-amber-200/80">Tejiendo el cuento con su moraleja y dibujando la escena...</p>
+      </div>
+
+      <div class="flex justify-center gap-4 pt-1 text-[11px] text-slate-500">
+        <button id="manage-btn" type="button" class="hidden hover:text-slate-300 underline">Gestionar suscripción</button>
+        <a href="/terminos.html" class="hover:text-slate-300 underline">Términos</a>
+        <a href="/privacidad.html" class="hover:text-slate-300 underline">Privacidad</a>
+      </div>
+    </main>
+
+    <!-- LECTURA -->
+    <article id="reader-view" class="hidden bg-stone-900 border border-stone-800 rounded-3xl p-6 shadow-2xl space-y-5 text-stone-200">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800 pb-3">
+        <button id="close-reader" type="button" class="text-xs text-amber-400 hover:underline whitespace-nowrap">← Crear otro</button>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <select id="voice-select" aria-label="Voz que narra" class="hidden bg-stone-800 border border-stone-700 text-amber-200 text-xs rounded-full px-2 py-1"></select>
+          <button id="btn-audio" type="button" class="px-3 py-1 bg-stone-800 hover:bg-stone-700 text-amber-300 rounded-full text-xs flex items-center gap-1 border border-stone-700">
+            <span id="audio-icon">🔊</span> <span id="audio-label">Escuchar</span>
+          </button>
+          <span id="reading-badge" class="whitespace-nowrap text-[11px] text-stone-400 bg-stone-950 px-2.5 py-0.5 rounded-full"></span>
+        </div>
+      </div>
+      <audio id="story-audio" preload="none" class="hidden"></audio>
+      <h2 id="story-title" class="text-xl font-bold text-amber-100 text-center leading-snug"></h2>
+      <div id="image-box" class="w-full aspect-[4/3] bg-stone-950 rounded-2xl overflow-hidden border border-stone-800 flex items-center justify-center">
+        <img id="story-image" alt="Ilustración del cuento" class="w-full h-full object-cover transition-opacity duration-300 opacity-0">
+      </div>
+      <div id="story-content" class="text-base font-serif leading-relaxed text-stone-300 space-y-4"></div>
+    </article>
+  </div>
+
+  <!-- PAYWALL -->
+  <div id="paywall-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative text-slate-100 space-y-5">
+      <button id="close-paywall" type="button" aria-label="Cerrar" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 text-lg p-2 rounded-full leading-none">✕</button>
+
+      <header class="text-center space-y-1 pt-2">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-400/10 text-amber-400 text-2xl mb-1">✨</div>
+        <h2 id="paywall-title" class="text-2xl font-bold tracking-tight text-white">Un cuento nuevo cada noche</h2>
+        <p id="paywall-reason" class="text-xs text-slate-400 px-4">Cuentos ilimitados, narrados con voz natural y con valores.</p>
+      </header>
+
+      <div class="flex justify-center">
+        <div class="bg-slate-950 p-1 rounded-2xl border border-slate-800 flex items-center gap-1">
+          <button id="btn-period-annual" type="button" class="period-btn period-btn-active">
+            Anual <span class="ml-1 inline-block bg-slate-950 text-amber-400 text-[10px] px-1.5 rounded-full font-bold">-33%</span>
+          </button>
+          <button id="btn-period-monthly" type="button" class="period-btn">Mensual</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <div id="card-standard" role="button" tabindex="0" class="plan-card relative bg-slate-950/70 rounded-2xl p-4 cursor-pointer">
+          <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap">Más popular</div>
+          <span class="text-xs font-bold text-amber-300">Estándar</span>
+          <div class="text-2xl font-black text-white mt-1.5" id="price-std"></div>
+          <p class="text-[11px] text-amber-200/90 font-medium" id="subtext-std"></p>
+          <hr class="border-slate-800 my-3">
+          <ul class="text-[11px] space-y-2 text-slate-300">
+            <li>✓ Cuentos ilimitados</li>
+            <li>✓ Duración: 2, 3 y 5 min</li>
+            <li>✓ 4 estilos de dibujo</li>
+            <li>✓ Narrador con voz natural</li>
+          </ul>
+        </div>
+
+        <div id="card-vip" role="button" tabindex="0" class="plan-card relative bg-slate-950/70 rounded-2xl p-4 cursor-pointer">
+          <div id="vip-badge" class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-purple-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap">Próximamente</div>
+          <span class="text-xs font-bold text-purple-300">VIP Familiar</span>
+          <div class="text-2xl font-black text-white mt-1.5" id="price-vip"></div>
+          <p class="text-[11px] text-slate-400" id="subtext-vip"></p>
+          <hr class="border-slate-800 my-3">
+          <ul class="text-[11px] space-y-2 text-slate-300">
+            <li>✓ Todo lo de Estándar</li>
+            <li>✓ Cuentos de 10 min</li>
+            <li>✓ 10 estilos visuales</li>
+            <li>✓ Voces de la familia: papá, mamá, abuelos, tíos (hasta 6)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <button id="btn-cta" type="button" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 rounded-2xl transition shadow-lg shadow-amber-500/20 active:scale-[0.99] flex flex-col items-center justify-center">
+          <span class="text-sm" id="cta-title">Probar 3 días gratis</span>
+          <span class="text-[10px] font-medium opacity-90" id="cta-subtext"></span>
+        </button>
+        <p id="checkout-error" class="hidden text-center text-[11px] text-rose-400"></p>
+        <p class="text-center text-[10px] text-slate-500">
+          Pago seguro con Stripe · Sin permanencia · Cancela cuando quieras desde «Gestionar suscripción».
+        </p>
+        <p class="text-center text-[10px] text-slate-500">
+          <a href="/terminos.html" class="underline">Términos</a> · <a href="/privacidad.html" class="underline">Privacidad</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROL PARENTAL -->
+  <div id="gate-modal" class="hidden fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <form id="gate-form" class="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 text-center">
+      <h2 id="gate-title" class="text-lg font-bold text-white">Solo para adultos</h2>
+      <p class="text-xs text-slate-400">Para continuar, responde: <strong id="gate-question" class="text-slate-200"></strong></p>
+      <input id="gate-answer" type="number" inputmode="numeric" required class="field text-center text-lg" aria-label="Respuesta">
+      <p id="gate-error" class="hidden text-[11px] text-rose-400">Respuesta incorrecta.</p>
+      <div class="flex gap-2">
+        <button type="button" id="gate-cancel" class="flex-1 py-2 rounded-xl border border-slate-700 text-slate-300 text-sm">Cancelar</button>
+        <button type="submit" class="flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-sm">Continuar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- GRABAR VOZ -->
+  <div id="voice-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="voice-title">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 relative">
+      <button id="close-voice" type="button" aria-label="Cerrar" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 text-lg p-2 leading-none">✕</button>
+      <h2 id="voice-title" class="text-lg font-bold text-white">Añadir una voz de la familia</h2>
+
+      <div>
+        <span class="field-label">¿Quién va a grabar?</span>
+        <div id="voice-presets" class="flex flex-wrap gap-2 text-xs"></div>
+        <input id="voice-name" type="text" maxlength="20" placeholder="O escribe otro: Tía Ana, Yaya..." class="field mt-2">
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm text-slate-300 leading-relaxed">
+        <p class="text-[11px] text-amber-300 mb-1">Lee este texto en voz alta, despacio y con tono de cuento (unos 20 segundos):</p>
+        <p>«Había una vez, en una casita al borde del bosque, una lucecita que se encendía cada noche. Cuando todos se ponían el pijama, la lucecita bajaba despacio, se sentaba en la almohada y contaba en voz bajita las estrellas, una, dos y tres, hasta que todos se quedaban dormidos.»</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="record-btn" type="button" class="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-bold py-2.5 rounded-xl text-sm">● Grabar</button>
+        <span id="record-time" class="text-xs text-slate-400 w-12 text-right">0 s</span>
+      </div>
+      <audio id="record-preview" controls class="hidden w-full"></audio>
+
+      <label class="flex items-start gap-2 text-[11px] text-slate-400">
+        <input id="voice-consent" type="checkbox" class="mt-0.5">
+        <span>Soy la persona que graba (o tengo su permiso) y acepto que se use esta grabación solo para narrar los cuentos de esta cuenta. Puedo borrarla cuando quiera. <a href="/privacidad.html" class="underline">Privacidad</a></span>
+      </label>
+      <p id="voice-error" class="hidden text-[11px] text-rose-400"></p>
+      <button id="save-voice" type="button" disabled class="w-full bg-amber-500 disabled:opacity-40 text-slate-950 font-bold py-3 rounded-2xl">Guardar voz</button>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-slate-100 text-xs px-4 py-2 rounded-full shadow-lg" role="status"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

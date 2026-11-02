@@ -1,0 +1,17 @@
+{
+  "name": "cuentos-magicos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PWA de cuentos infantiles personalizados para dormir, en Cloudflare Workers.",
+  "type": "module",
+  "scripts": {
+    "css": "tailwindcss -c tailwind.config.cjs -i styles/input.css -o public/styles.css --minify",
+    "dev": "npm run css && wrangler dev",
+    "deploy": "npm run css && wrangler deploy",
+    "test": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.19",
+    "wrangler": "^4.0.0"
+  }
+}

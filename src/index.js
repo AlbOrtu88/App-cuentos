@@ -1,0 +1,441 @@
+/**
+ * Cuentos Mágicos: Worker de Cloudflare.
+ * Sirve la PWA (carpeta public/) y la API. Guarda el plan y la cuota en KV,
+ * las imágenes y audios en R2, y cobra con Stripe.
+ */
+
+import { DURATIONS, FREE_STORY_LIMIT, LESSONS, MAX_VOICES, STYLES, planAllows, targetWords } from './config.js';
+import { cleanAge, cleanField, monthKey, stripNames } from './text.js';
+import { generateImage, generateStoryText, synthesizeClonedSpeech, synthesizeSpeech } from './ai.js';
+import { signPath, verifySignedPath } from './sign.js';
+import { inspectWav } from './wav.js';
+import { planFromSubscription, stripeRequest, verifyStripeSignature } from './stripe.js';
+
+const COOKIE = 'cm_uid';
+const STORY_TTL = 60 * 60 * 24 * 90; // los cuentos se guardan 90 días
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    try {
+      if (path === '/api/stripe-webhook' && request.method === 'POST') {
+        return await handleStripeWebhook(request, env);
+      }
+
+      if (path.startsWith('/media/voicesrc/') && request.method === 'GET') {
+        return await serveVoiceSample(env, url);
+      }
+
+      if (path.startsWith('/media/') && request.method === 'GET') {
+        return await serveMedia(env, path.slice('/media/'.length));
+      }
+
+      if (path.startsWith('/api/')) {
+        if (request.method !== 'GET' && !originAllowed(request, url, env)) {
+          return json({ error: 'Origen no permitido' }, 403);
+        }
+        const session = await getSession(request, env);
+        const res = await routeApi(request, env, url, session);
+        if (session.isNew) res.headers.append('Set-Cookie', sessionCookie(session.uid, url));
+        return res;
+      }
+
+      return env.ASSETS.fetch(request);
+    } catch (err) {
+      console.error('[ERROR]', path, err.message);
+      return json({ error: 'Error interno del servidor' }, 500);
+    }
+  },
+};
+
+async function routeApi(request, env, url, session) {
+  const { path, method } = { path: url.pathname, method: request.method };
+  if (path === '/api/me' && method === 'GET') return handleMe(env, session);
+  if (path === '/api/generate-story' && method === 'POST') return handleGenerate(request, env, url, session);
+  const audioMatch = path.match(/^\/api\/story\/([a-z0-9-]+)\/audio$/);
+  if (audioMatch && method === 'POST') return handleAudio(request, env, url, session, audioMatch[1]);
+  if (path === '/api/voices' && method === 'GET') return json({ voices: publicVoices(session.user), max: MAX_VOICES });
+  if (path === '/api/voices' && method === 'POST') return handleAddVoice(request, env, url, session);
+  const voiceMatch = path.match(/^\/api\/voices\/([a-f0-9-]{36})$/);
+  if (voiceMatch && method === 'DELETE') return handleDeleteVoice(env, session, voiceMatch[1]);
+  if (path === '/api/checkout' && method === 'POST') return handleCheckout(request, env, url, session);
+  if (path === '/api/portal' && method === 'POST') return handlePortal(env, url, session);
+  return json({ error: 'Ruta no encontrada' }, 404);
+}
+
+// ---------- Sesión anónima ----------
+
+async function getSession(request, env) {
+  const cookies = Object.fromEntries(
+    (request.headers.get('Cookie') || '')
+      .split(';')
+      .map((c) => c.trim().split('='))
+      .filter(([k]) => k),
+  );
+  let uid = cookies[COOKIE];
+  let isNew = false;
+  if (!uid || !/^[a-f0-9-]{36}$/.test(uid)) {
+    uid = crypto.randomUUID();
+    isNew = true;
+  }
+  const user = (await env.DATA.get(`user:${uid}`, 'json')) || { plan: 'free', freeUsed: 0 };
+  // Solo para probar en local: fuerza un plan sin pasar por Stripe.
+  if (env.DEV_PLAN && env.ENVIRONMENT !== 'production') user.plan = env.DEV_PLAN;
+  return { uid, isNew, user };
+}
+
+function sessionCookie(uid, url) {
+  const secure = url.protocol === 'https:' ? '; Secure' : '';
+  return `${COOKIE}=${uid}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 400}${secure}`;
+}
+
+async function saveUser(env, uid, user) {
+  await env.DATA.put(`user:${uid}`, JSON.stringify(user));
+}
+
+function originAllowed(request, url, env) {
+  const origin = request.headers.get('Origin');
+  if (!origin) return true;
+  if (origin === url.origin) return true;
+  return Boolean(env.ALLOWED_ORIGIN) && origin === env.ALLOWED_ORIGIN;
+}
+
+// ---------- /api/me ----------
+
+function handleMe(env, session) {
+  const { plan, freeUsed = 0 } = session.user;
+  return json({
+    plan,
+    freeRemaining: plan === 'free' ? Math.max(0, FREE_STORY_LIMIT - freeUsed) : null,
+    hasBilling: Boolean(session.user.customerId),
+    vipEnabled: env.VIP_ENABLED === '1',
+    voices: publicVoices(session.user),
+    maxVoices: MAX_VOICES,
+  });
+}
+
+// ---------- /api/generate-story ----------
+
+async function handleGenerate(request, env, url, session) {
+  const { uid, user } = session;
+  const body = await request.json().catch(() => ({}));
+
+  const duration = parseInt(body.duration, 10);
+  const style = STYLES[body.styleId];
+  const lesson = LESSONS[body.lessonId];
+  if (!DURATIONS[duration]) return json({ error: 'Duración no válida' }, 400);
+  if (!style) return json({ error: 'Estilo no válido' }, 400);
+  if (!lesson) return json({ error: 'Moraleja no válida' }, 400);
+
+  if (!planAllows(user.plan, DURATIONS[duration]) || !planAllows(user.plan, style.plan)) {
+    const needed = DURATIONS[duration] === 'vip' || style.plan === 'vip' ? 'vip' : 'standard';
+    return json({ error: 'Esta opción requiere un plan superior.', code: 'upgrade', needed }, 402);
+  }
+
+  if (user.plan === 'free' && (user.freeUsed || 0) >= FREE_STORY_LIMIT) {
+    return json({ error: 'Has usado tus cuentos gratis.', code: 'quota' }, 402);
+  }
+
+  const limited = await hitDailyLimit(request, env, uid, user.plan);
+  if (limited) return json({ error: 'Has llegado al límite de cuentos de hoy. Vuelve mañana.', code: 'daily' }, 429);
+
+  const input = {
+    name: cleanField(body.childName, 'el pequeño'),
+    age: cleanAge(body.childAge),
+    companion: cleanField(body.companion, 'un amigo'),
+    petToy: cleanField(body.petToy, 'su peluche preferido'),
+    lesson,
+    words: targetWords(duration),
+  };
+
+  const t0 = Date.now();
+  const story = await generateStoryText(env, input);
+  console.log(`[GEMINI] ${Date.now() - t0}ms | plan ${user.plan} | ${duration} min`);
+
+  const id = crypto.randomUUID();
+  const scene = stripNames(String(story.escena || 'a cozy bedtime scene'), [input.name, input.companion, input.petToy]);
+  const imagePrompt = `${scene}, ${style.prompt}, dreamy cozy bedtime atmosphere, cute, child friendly, no text`;
+
+  let imageUrl = null;
+  try {
+    const image = await generateImage(env, imagePrompt);
+    if (image) {
+      await env.MEDIA.put(`img/${id}`, image.bytes, { httpMetadata: { contentType: image.contentType } });
+      imageUrl = `/media/img/${id}`;
+    }
+  } catch (err) {
+    console.error('[IMAGEN]', err.message);
+  }
+
+  await env.DATA.put(
+    `story:${id}`,
+    JSON.stringify({ uid, titulo: story.titulo, parrafos: story.parrafos, imageUrl, minutes: duration }),
+    { expirationTtl: STORY_TTL },
+  );
+
+  if (user.plan === 'free') {
+    user.freeUsed = (user.freeUsed || 0) + 1;
+    await saveUser(env, uid, user);
+  }
+
+  return json({
+    id,
+    titulo: story.titulo,
+    parrafos: story.parrafos,
+    imageUrl,
+    minutes: duration,
+    freeRemaining: user.plan === 'free' ? Math.max(0, FREE_STORY_LIMIT - user.freeUsed) : null,
+  });
+}
+
+// Límite diario anti-abuso: por IP para el plan gratis y por usuario para los de pago.
+async function hitDailyLimit(request, env, uid, plan) {
+  const day = new Date().toISOString().slice(0, 10);
+  const ip = request.headers.get('CF-Connecting-IP') || 'local';
+  const key = plan === 'free' ? `rl:ip:${ip}:${day}` : `rl:uid:${uid}:${day}`;
+  const max = parseInt(plan === 'free' ? env.FREE_DAILY_IP_LIMIT || '10' : env.PAID_DAILY_LIMIT || '20', 10);
+  const count = parseInt((await env.DATA.get(key)) || '0', 10);
+  if (count >= max) return true;
+  await env.DATA.put(key, String(count + 1), { expirationTtl: 60 * 60 * 26 });
+  return false;
+}
+
+// ---------- /api/story/:id/audio ----------
+// Sin voiceId: narrador con voz natural de Google (planes de pago).
+// Con voiceId: voz clonada de un familiar con Chatterbox (plan VIP).
+
+async function handleAudio(request, env, url, session, id) {
+  const { uid, user } = session;
+  if (user.plan === 'free') {
+    return json({ error: 'La voz narrada está incluida en los planes de pago.', code: 'upgrade', needed: 'standard' }, 402);
+  }
+  const body = await request.json().catch(() => ({}));
+  const voice = body.voiceId ? (user.voices || []).find((v) => v.id === body.voiceId) : null;
+  if (body.voiceId && !voice) return json({ error: 'Voz no encontrada' }, 404);
+  if (voice && user.plan !== 'vip') {
+    return json({ error: 'Las voces de la familia están en el plan VIP.', code: 'upgrade', needed: 'vip' }, 402);
+  }
+
+  const story = await env.DATA.get(`story:${id}`, 'json');
+  if (!story || story.uid !== uid) return json({ error: 'Cuento no encontrado' }, 404);
+
+  const key = voice ? `audio/${voice.id}/${id}` : `audio/${id}`;
+  // Si el audio ya existe se reutiliza: repetir un cuento no cuesta nada.
+  if (await env.MEDIA.head(key)) return json({ audioUrl: `/media/${key}` });
+
+  const text = `${story.titulo}. ${story.parrafos.join(' ')}`;
+
+  // Uso razonable: topes mensuales de caracteres por usuario (uno para cada tipo de voz).
+  const month = monthKey();
+  if (user.audioMonth !== month) {
+    user.audioMonth = month;
+    user.audioChars = 0;
+    user.clonedChars = 0;
+  }
+  const counter = voice ? 'clonedChars' : 'audioChars';
+  const cap = parseInt(voice ? env.CLONED_MONTHLY_CHAR_CAP || '45000' : env.AUDIO_MONTHLY_CHAR_CAP || '150000', 10);
+  if ((user[counter] || 0) + text.length > cap) {
+    const error = voice
+      ? 'Has llegado a los minutos de voz familiar de este mes. Puedes seguir con el narrador.'
+      : 'Has llegado al uso razonable de voz de este mes.';
+    return json({ error, code: 'audio_cap' }, 429);
+  }
+
+  let bytes;
+  let contentType;
+  if (voice) {
+    if (env.MOCK_AI === '1' || !env.FAL_KEY || !env.MEDIA_SIGNING_KEY) {
+      return json({ error: 'Voz familiar no configurada', code: 'no_tts' }, 503);
+    }
+    const sampleUrl = url.origin + (await signPath(env.MEDIA_SIGNING_KEY, `/media/voicesrc/${voice.id}`, 900));
+    const t0 = Date.now();
+    bytes = await synthesizeClonedSpeech(env, text, sampleUrl);
+    console.log(`[CHATTERBOX] ${Date.now() - t0}ms | ${text.length} caracteres`);
+    contentType = 'audio/wav';
+  } else {
+    if (env.MOCK_AI === '1' || !env.GOOGLE_TTS_API_KEY) {
+      return json({ error: 'Voz no configurada', code: 'no_tts' }, 503);
+    }
+    bytes = await synthesizeSpeech(env, text);
+    contentType = 'audio/mpeg';
+  }
+
+  await env.MEDIA.put(key, bytes, { httpMetadata: { contentType } });
+  user[counter] = (user[counter] || 0) + text.length;
+  await saveUser(env, uid, user);
+  return json({ audioUrl: `/media/${key}` });
+}
+
+// ---------- Voces de la familia (VIP) ----------
+
+function publicVoices(user) {
+  return (user.voices || []).map(({ id, name }) => ({ id, name }));
+}
+
+const MAX_SAMPLE_BYTES = 3 * 1024 * 1024;
+
+async function handleAddVoice(request, env, url, session) {
+  const { uid, user } = session;
+  if (user.plan !== 'vip') {
+    return json({ error: 'Las voces de la familia están en el plan VIP.', code: 'upgrade', needed: 'vip' }, 402);
+  }
+  // Consentimiento expreso: la voz es un dato biométrico.
+  if (url.searchParams.get('consent') !== '1') {
+    return json({ error: 'Falta el consentimiento de la persona que graba.' }, 400);
+  }
+  const voices = user.voices || [];
+  if (voices.length >= MAX_VOICES) {
+    return json({ error: `Puedes guardar hasta ${MAX_VOICES} voces. Borra una para añadir otra.` }, 400);
+  }
+  const name = cleanField(url.searchParams.get('name') || '', '', 20);
+  if (!name) return json({ error: 'Ponle un nombre a la voz (por ejemplo, Papá).' }, 400);
+
+  const declared = parseInt(request.headers.get('Content-Length') || '0', 10);
+  if (declared > MAX_SAMPLE_BYTES) return json({ error: 'La grabación es demasiado larga.' }, 413);
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.length > MAX_SAMPLE_BYTES) return json({ error: 'La grabación es demasiado larga.' }, 413);
+
+  let info;
+  try {
+    info = inspectWav(bytes);
+  } catch {
+    return json({ error: 'El audio no es válido. Vuelve a grabarlo.' }, 400);
+  }
+  if (info.seconds < 8) return json({ error: 'Graba al menos 10 segundos para que la voz se parezca.' }, 400);
+  if (info.seconds > 40) return json({ error: 'Graba como mucho 30 segundos.' }, 400);
+
+  const id = crypto.randomUUID();
+  await env.MEDIA.put(`voicesrc/${id}`, bytes, { httpMetadata: { contentType: 'audio/wav' } });
+  voices.push({ id, name, createdAt: new Date().toISOString(), consentAt: new Date().toISOString() });
+  user.voices = voices;
+  await saveUser(env, uid, user);
+  return json({ voices: publicVoices(user) });
+}
+
+async function handleDeleteVoice(env, session, voiceId) {
+  const { uid, user } = session;
+  const voices = user.voices || [];
+  if (!voices.some((v) => v.id === voiceId)) return json({ error: 'Voz no encontrada' }, 404);
+  await env.MEDIA.delete(`voicesrc/${voiceId}`);
+  // Borra también los cuentos ya narrados con esa voz.
+  let cursor;
+  do {
+    const page = await env.MEDIA.list({ prefix: `audio/${voiceId}/`, cursor });
+    if (page.objects.length) await env.MEDIA.delete(page.objects.map((o) => o.key));
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  user.voices = voices.filter((v) => v.id !== voiceId);
+  await saveUser(env, uid, user);
+  return json({ voices: publicVoices(user) });
+}
+
+// La muestra de voz solo se sirve con una URL firmada y que caduca (para fal.ai).
+async function serveVoiceSample(env, url) {
+  const ok = await verifySignedPath(env.MEDIA_SIGNING_KEY, url.pathname, url.searchParams.get('exp'), url.searchParams.get('sig'));
+  const match = url.pathname.match(/^\/media\/voicesrc\/([a-f0-9-]{36})$/);
+  if (!ok || !match) return new Response('No autorizado', { status: 403 });
+  const obj = await env.MEDIA.get(`voicesrc/${match[1]}`);
+  if (!obj) return new Response('No encontrado', { status: 404 });
+  return new Response(obj.body, { headers: { 'Content-Type': 'audio/wav', 'Cache-Control': 'no-store' } });
+}
+
+// ---------- /media/* ----------
+
+async function serveMedia(env, key) {
+  if (!/^(img\/[a-f0-9-]+|audio\/[a-f0-9-]+(\/[a-f0-9-]+)?)$/.test(key)) return new Response('No encontrado', { status: 404 });
+  const obj = await env.MEDIA.get(key);
+  if (!obj) return new Response('No encontrado', { status: 404 });
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set('Cache-Control', 'private, max-age=31536000, immutable');
+  return new Response(obj.body, { headers });
+}
+
+// ---------- Stripe ----------
+
+const PRICE_ENV = {
+  standard: { monthly: 'PRICE_STANDARD_MONTHLY', annual: 'PRICE_STANDARD_ANNUAL' },
+  vip: { monthly: 'PRICE_VIP_MONTHLY', annual: 'PRICE_VIP_ANNUAL' },
+};
+
+async function handleCheckout(request, env, url, session) {
+  const body = await request.json().catch(() => ({}));
+  const plan = body.plan === 'vip' ? 'vip' : 'standard';
+  const billing = body.billing === 'monthly' ? 'monthly' : 'annual';
+  if (plan === 'vip' && env.VIP_ENABLED !== '1') {
+    return json({ error: 'El plan VIP llegará pronto.' }, 400);
+  }
+  const price = env[PRICE_ENV[plan][billing]];
+  if (!env.STRIPE_SECRET_KEY || !price) return json({ error: 'Pagos no configurados' }, 503);
+
+  const checkout = await stripeRequest(env, '/checkout/sessions', {
+    mode: 'subscription',
+    line_items: { 0: { price, quantity: 1 } },
+    client_reference_id: session.uid,
+    customer: session.user.customerId || undefined,
+    metadata: { uid: session.uid, plan },
+    subscription_data: {
+      trial_period_days: session.user.hadTrial ? undefined : 3,
+      metadata: { uid: session.uid, plan },
+    },
+    allow_promotion_codes: 'true',
+    locale: 'es',
+    success_url: `${url.origin}/?checkout=ok`,
+    cancel_url: `${url.origin}/?checkout=cancel`,
+  });
+  return json({ url: checkout.url });
+}
+
+async function handlePortal(env, url, session) {
+  if (!session.user.customerId) return json({ error: 'No hay suscripción' }, 400);
+  const portal = await stripeRequest(env, '/billing_portal/sessions', {
+    customer: session.user.customerId,
+    return_url: `${url.origin}/`,
+  });
+  return json({ url: portal.url });
+}
+
+async function handleStripeWebhook(request, env) {
+  const payload = await request.text();
+  const ok = await verifyStripeSignature(payload, request.headers.get('Stripe-Signature'), env.STRIPE_WEBHOOK_SECRET);
+  if (!ok) return json({ error: 'Firma no válida' }, 400);
+
+  const event = JSON.parse(payload);
+  const obj = event.data?.object || {};
+
+  if (event.type === 'checkout.session.completed') {
+    const uid = obj.client_reference_id || obj.metadata?.uid;
+    if (uid) {
+      const user = (await env.DATA.get(`user:${uid}`, 'json')) || { plan: 'free', freeUsed: 0 };
+      user.plan = obj.metadata?.plan === 'vip' ? 'vip' : 'standard';
+      user.customerId = obj.customer;
+      user.subscriptionId = obj.subscription;
+      user.hadTrial = true;
+      await saveUser(env, uid, user);
+    }
+  }
+
+  if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+    const uid = obj.metadata?.uid;
+    if (uid) {
+      const user = (await env.DATA.get(`user:${uid}`, 'json')) || { plan: 'free', freeUsed: 0 };
+      user.plan = event.type === 'customer.subscription.deleted' ? 'free' : planFromSubscription(obj);
+      user.customerId = obj.customer;
+      user.subscriptionId = obj.id;
+      await saveUser(env, uid, user);
+    }
+  }
+
+  return json({ received: true });
+}
+
+// ---------- utilidades ----------
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}

@@ -1,0 +1,51 @@
+name = "cuentos-magicos"
+main = "src/index.js"
+compatibility_date = "2026-03-01"
+
+# La PWA se sirve desde la misma dirección que la API, así no hace falta CORS.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Plan, cuota y cuentos de cada usuario.
+# Crear con: npx wrangler kv namespace create DATA  y pegar aquí el id.
+[[kv_namespaces]]
+binding = "DATA"
+id = "REEMPLAZAR_CON_ID_DE_KV"
+
+# Imágenes y audios generados.
+# Crear con: npx wrangler r2 bucket create cuentos-magicos-media
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "cuentos-magicos-media"
+
+[vars]
+ENVIRONMENT = "production"
+# Voz de Google Chirp 3 HD en español de España.
+TTS_VOICE = "es-ES-Chirp3-HD-Aoede"
+# Límites anti-abuso.
+FREE_DAILY_IP_LIMIT = "10"
+PAID_DAILY_LIMIT = "20"
+AUDIO_MONTHLY_CHAR_CAP = "150000"
+# Voces de la familia (Chatterbox): unos 60 minutos al mes por cuenta VIP.
+CLONED_MONTHLY_CHAR_CAP = "45000"
+# Pon "1" cuando tengas creados los precios VIP en Stripe para poder venderlo.
+VIP_ENABLED = "0"
+# Precios de Stripe (ids price_...). Rellenar al crear los productos.
+PRICE_STANDARD_MONTHLY = ""
+PRICE_STANDARD_ANNUAL = ""
+PRICE_VIP_MONTHLY = ""
+PRICE_VIP_ANNUAL = ""
+
+# Secretos (no van en este archivo):
+#   npx wrangler secret put GEMINI_API_KEY
+#   npx wrangler secret put GOOGLE_TTS_API_KEY
+#   npx wrangler secret put FAL_KEY
+#   npx wrangler secret put STRIPE_SECRET_KEY
+#   npx wrangler secret put STRIPE_WEBHOOK_SECRET
+#   npx wrangler secret put MEDIA_SIGNING_KEY   (texto aleatorio largo: firma los enlaces de las muestras de voz)
+#
+# Solo en local (.dev.vars), nunca en producción:
+#   MOCK_AI=1          cuentos de prueba sin gastar en IA
+#   DEV_PLAN=vip       simula un plan sin pasar por Stripe
+#   ENVIRONMENT=development
