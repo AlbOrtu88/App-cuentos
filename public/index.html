@@ -17,11 +17,11 @@
 <body class="bg-papel-950 text-papel-100 min-h-screen flex flex-col items-center p-3 font-sans antialiased">
 
   <div class="w-full max-w-md mx-auto my-2">
-    <header class="relative mb-4 overflow-hidden rounded-3xl border border-papel-800 aspect-[16/9] bg-papel-800">
-      <img src="/img/cabecera.webp" alt="" width="960" height="536" class="absolute inset-0 w-full h-full object-cover">
-      <div class="absolute right-4 top-[16%] w-[48%] text-center">
-        <h1 class="text-[36px] leading-none text-papel-50">Cuentacasa</h1>
-        <p class="text-sm text-papel-300 mt-1">Un cuento con su nombre, cada noche</p>
+    <header class="relative mb-3 overflow-hidden rounded-3xl border border-papel-800 h-32 bg-papel-800">
+      <img src="/img/cabecera.webp" alt="" width="960" height="536" class="absolute inset-0 w-full h-full object-cover object-[30%_60%]">
+      <div class="absolute inset-y-0 right-3 w-[56%] flex flex-col justify-center text-center">
+        <h1 class="text-[clamp(26px,8.5vw,36px)] leading-none text-papel-50">Cuentacasa</h1>
+        <p class="text-xs sm:text-sm text-papel-300 mt-1">Un cuento con su nombre, cada noche</p>
       </div>
     </header>
 
@@ -37,17 +37,17 @@
         <span id="step-count" class="text-xs font-bold text-papel-400 tabular-nums">Paso 1 de 6</span>
       </nav>
 
-      <div id="steps" class="bg-papel-900 border border-papel-800 rounded-3xl p-5 min-h-[420px] flex flex-col">
+      <div id="steps" class="bg-papel-900 border border-papel-800 rounded-3xl px-5 pt-5 flex flex-col">
 
         <section class="step" data-step="name" aria-labelledby="t-step-name">
           <h2 id="t-step-name" class="step-title">¿Para quién es el cuento de esta noche?</h2>
-          <section id="profiles-section" aria-label="Perfiles de los peques" class="space-y-2">
+          <section id="profiles-section" aria-label="Perfiles de los peques" class="space-y-1">
             <div class="flex items-center justify-between">
               <span class="field-label mb-0">Peques de la casa <span class="plan-tag">VIP</span></span>
               <button id="save-profile-btn" type="button" class="tap text-xs text-terracota-400 hover:underline">+ Guardar perfil</button>
             </div>
             <ul id="profiles-list" class="flex flex-wrap gap-2"></ul>
-            <p id="profiles-empty" class="text-xs text-papel-500">Guarda el nombre, la edad y el peluche de cada hermano para no escribirlos cada noche.</p>
+            <p id="profiles-empty" class="text-xs text-papel-500">Guarda a cada hermano para no escribirlo cada noche.</p>
           </section>
           <div>
             <label for="child-name" class="field-label">Su nombre</label>
@@ -123,7 +123,7 @@
           </div>
         </section>
 
-        <div id="step-nav" class="mt-auto pt-5 flex items-center gap-3">
+        <div id="step-nav" class="step-nav">
           <button id="step-back" type="button" class="tap rounded-full px-5 text-sm font-bold text-papel-400 hover:text-papel-100" hidden>Atrás</button>
           <button id="step-next" type="button" class="tap ml-auto rounded-full px-7 bg-papel-50 text-papel-950 text-sm font-bold hover:bg-papel-100 active:scale-[0.98] transition">Siguiente</button>
         </div>

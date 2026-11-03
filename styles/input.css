@@ -27,10 +27,12 @@
   .step-in-back { animation: step-in-back 0.32s cubic-bezier(.2,.7,.2,1) both; }
   .step-title { @apply font-display text-2xl leading-tight text-papel-50 outline-none; text-wrap: balance; }
   .step-hint { @apply -mt-2 text-sm text-papel-400; }
+  /* Atrás / Siguiente siempre a la vista, pegados al borde de abajo de la pantalla */
+  .step-nav { @apply sticky bottom-0 z-10 -mx-5 mt-5 flex items-center gap-3 rounded-b-3xl border-t border-papel-800 bg-papel-900/95 px-5 pt-3 backdrop-blur; padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
   .step-dot { @apply h-1.5 flex-1 rounded-full bg-papel-800 transition-colors duration-300; }
   .step-dot-on { @apply bg-terracota-500; }
   .field-big { @apply text-lg py-3 px-4 rounded-2xl; }
-  .stepper-btn { @apply inline-flex items-center justify-center h-12 w-12 rounded-full border-2 border-papel-800 bg-papel-950 text-2xl font-bold text-terracota-400 hover:border-terracota-400 active:scale-95 transition; }
+  .stepper-btn { @apply inline-flex items-center justify-center h-11 w-11 rounded-full border-2 border-papel-800 bg-papel-950 text-2xl font-bold text-terracota-400 hover:border-terracota-400 active:scale-95 transition; }
   /* Tarjetas con dibujo para elegir (moraleja, duración, estilo) */
   .choice-card { @apply relative flex flex-col items-center overflow-hidden rounded-2xl border-2 border-papel-800 bg-papel-950 transition hover:border-papel-700; }
   .choice-card:active { animation: pop 0.2s ease-out; }
