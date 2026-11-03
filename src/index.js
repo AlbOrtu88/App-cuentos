@@ -1,5 +1,5 @@
 /**
- * Cuentos Mágicos: Worker de Cloudflare.
+ * Cuentacasa: Worker de Cloudflare.
  * Sirve la PWA (carpeta public/) y la API. Guarda el plan y la cuota en KV,
  * las imágenes y audios en R2, y cobra con Stripe.
  */
