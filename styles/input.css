@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  /* Títulos con letra redondeada (la del sistema en iPhone; si no, la normal) */
-  h1, h2 { font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif; text-wrap: balance; }
+  /* Títulos con la letra de libro ilustrado; sin negrita falsa porque Young Serif solo tiene un peso */
+  h1, h2 { @apply font-display font-normal; text-wrap: balance; }
   /* Foco visible para teclado y lectores de pantalla */
   :focus-visible { outline: 2px solid theme('colors.melocoton.500'); outline-offset: 2px; border-radius: 0.5rem; }
   /* Sin animaciones si el móvil tiene «reducir movimiento» */
@@ -20,9 +20,11 @@
   .tap-chip { @apply inline-flex items-center justify-center min-h-[32px] min-w-[32px]; }
   .field-label { @apply block text-xs font-semibold text-papel-300 mb-1; }
   .field { @apply min-h-[44px] w-full bg-papel-950 border border-papel-800 rounded-xl px-3 py-2 text-sm text-papel-100 placeholder-papel-600 focus:outline-none focus:border-terracota-400 focus:ring-1 focus:ring-terracota-400; }
-  .option-btn { @apply min-h-[44px] py-2 px-2.5 rounded-xl border border-papel-800 bg-papel-950 text-papel-300 transition hover:border-papel-600; }
+  .option-btn { @apply inline-flex items-center justify-center gap-1.5 flex-wrap min-h-[44px] py-2 px-2.5 rounded-xl border border-papel-800 bg-papel-950 text-papel-300 transition hover:border-papel-600; }
   .option-btn-active { @apply border-terracota-400 bg-terracota-400/10 text-terracota-200 font-semibold; }
-  .option-btn-locked { @apply opacity-60 text-papel-500; }
+  .option-btn-locked { @apply text-papel-500 border-dashed; }
+  /* Plan que desbloquea algo: texto pequeño en lavanda, en lugar de coronas y estrellas */
+  .plan-tag { @apply inline-block align-middle text-xs font-bold leading-none px-1.5 py-1 rounded-md bg-lavanda-500/10 text-lavanda-200; }
   .plan-card { @apply border-2 border-papel-800 transition; }
   .plan-card-active { @apply border-terracota-400; }
   .plan-card-disabled { @apply opacity-70 cursor-not-allowed; }

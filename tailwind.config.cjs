@@ -7,6 +7,13 @@ module.exports = {
   content: ['./public/**/*.{html,js}'],
   theme: {
     extend: {
+      // Young Serif para títulos (aire de libro ilustrado), Atkinson Hyperlegible para la interfaz
+      // (pensada para leerse bien cansado) y Literata para el texto del cuento.
+      fontFamily: {
+        display: ['"Young Serif"', 'Georgia', 'serif'],
+        sans: ['"Atkinson Hyperlegible"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        serif: ['Literata', 'Georgia', '"Times New Roman"', 'serif'],
+      },
       colors: {
         papel: {
           50: '#1F2A6B',  // títulos, azul marino

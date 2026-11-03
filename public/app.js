@@ -119,8 +119,12 @@ function renderQuota() {
   }
 }
 
-function lockLabel(plan) {
-  return plan === 'standard' ? '⭐' : '👑';
+// Etiqueta de texto del plan que desbloquea una opción (sin emojis).
+function lockTag(plan) {
+  const tag = document.createElement('span');
+  tag.className = 'plan-tag';
+  tag.textContent = plan === 'standard' ? 'Estándar' : 'Pro';
+  return tag;
 }
 
 function renderDurations() {
@@ -132,7 +136,8 @@ function renderDurations() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `option-btn ${selected ? 'option-btn-active' : ''} ${locked ? 'option-btn-locked' : ''}`;
-    btn.textContent = `${locked ? lockLabel(d.plan) + ' ' : ''}${d.min} min`;
+    btn.textContent = `${d.min} min`;
+    if (locked) btn.appendChild(lockTag(d.plan));
     btn.setAttribute('aria-pressed', String(selected));
     btn.addEventListener('click', () => {
       if (locked) return openPaywall(d.plan === 'standard' ? 'Los cuentos de 5 minutos están desde el plan Estándar.' : 'Los cuentos de 10 minutos están en los planes Pro y VIP.');
@@ -152,8 +157,9 @@ function renderStyles() {
     const selected = state.styleId === s.id;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `option-btn text-left ${selected ? 'option-btn-active' : ''} ${locked ? 'option-btn-locked' : ''}`;
-    btn.textContent = `${locked ? lockLabel(s.plan) + ' ' : ''}${s.label}`;
+    btn.className = `option-btn justify-between text-left ${selected ? 'option-btn-active' : ''} ${locked ? 'option-btn-locked' : ''}`;
+    btn.textContent = s.label;
+    if (locked) btn.appendChild(lockTag(s.plan));
     btn.setAttribute('aria-pressed', String(selected));
     btn.addEventListener('click', () => {
       if (locked) return openPaywall(s.plan === 'standard' ? 'Este estilo está desde el plan Estándar.' : 'Este estilo está en los planes Pro y VIP.');
@@ -271,7 +277,7 @@ function closeReader() {
 // Gratis o si falla: la voz del propio dispositivo, párrafo a párrafo.
 
 function setAudioButton(playing, loading = false) {
-  $('audio-icon').textContent = loading ? '⏳' : playing ? '⏸' : '🔊';
+  $('audio-icon').textContent = loading ? '…' : playing ? '❚❚' : '▶\uFE0E';
   $('audio-label').textContent = loading ? (state.voiceId ? 'Preparando voz (1 min)' : 'Preparando') : playing ? 'Pausar' : 'Escuchar';
 }
 
@@ -760,7 +766,8 @@ function renderLibrary(forever, offline, isOffline) {
       thumb.alt = '';
       thumb.loading = 'lazy';
     } else {
-      thumb.textContent = '🌙';
+      thumb.textContent = (item.titulo || 'C').trim().charAt(0).toUpperCase();
+      thumb.classList.add('font-display', 'text-terracota-300');
     }
     const text = document.createElement('div');
     text.className = 'min-w-0';
@@ -811,8 +818,8 @@ function renderReaderActions() {
   const vip = allows('vip');
   const offline = readStore(OFFLINE_KEY, {});
   const saved = Boolean(offline[state.story.id]);
-  $('btn-offline').textContent = `${vip ? '' : '👑 '}${saved ? '✓ Guardado sin conexión' : '⬇ Guardar sin conexión'}`;
-  $('btn-share').textContent = `${vip ? '' : '👑 '}💌 Enviar a los abuelos`;
+  $('btn-offline').textContent = `${saved ? 'Guardado sin conexión' : 'Guardar sin conexión'}${vip ? '' : ' (VIP)'}`;
+  $('btn-share').textContent = `Enviar a los abuelos${vip ? '' : ' (VIP)'}`;
 }
 
 // VIP: guarda el cuento, su dibujo y su audio en el dispositivo para el coche o el avión.
@@ -903,7 +910,7 @@ async function copyShareLink() {
 
 async function sendShareLink() {
   try {
-    await navigator.share({ title: state.story?.titulo || 'Un cuento', text: 'Escucha el cuento de esta noche 🌙', url: $('share-url').value });
+    await navigator.share({ title: state.story?.titulo || 'Un cuento', text: 'Escucha el cuento de esta noche', url: $('share-url').value });
   } catch {
     /* el usuario cerró el menú */
   }
