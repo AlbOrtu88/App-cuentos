@@ -52,6 +52,9 @@ const state = {
   maxVoices: 6,
   voiceId: '',
   story: null,
+  from: 'creator', // vista a la que vuelve el lector: 'creator' | 'library'
+  library: [],
+  profiles: [],
   audioMode: null, // 'file' | 'speech' | null
   busy: false,
 };
@@ -94,6 +97,7 @@ const allows = (required) => PLAN_RANK[state.plan] >= PLAN_RANK[required];
 
 function render() {
   renderQuota();
+  renderProfiles();
   renderDurations();
   renderStyles();
   renderVoices();
@@ -218,8 +222,9 @@ async function generate() {
   }
 }
 
-function showStory(story) {
-  state.story = story;
+function showStory(story, from = 'creator') {
+  state.story = { ...story, audio: { ...(story.audio || {}) } };
+  state.from = from;
   stopAudio();
   $('story-title').textContent = story.titulo;
   $('reading-badge').textContent = `⏱ ${story.minutes} min`;
@@ -246,7 +251,10 @@ function showStory(story) {
   }
 
   renderVoiceSelect();
+  renderReaderActions();
+  $('close-reader').textContent = from === 'library' ? '← Mis cuentos' : '← Crear otro';
   $('creator-view').classList.add('hidden');
+  $('library-view').classList.add('hidden');
   $('reader-view').classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -254,7 +262,8 @@ function showStory(story) {
 function closeReader() {
   stopAudio();
   $('reader-view').classList.add('hidden');
-  $('creator-view').classList.remove('hidden');
+  if (state.from === 'library') openLibrary();
+  else $('creator-view').classList.remove('hidden');
 }
 
 // ---------- Audio ----------
@@ -295,33 +304,48 @@ async function toggleAudio() {
   }
 
   if (state.plan !== 'free' && state.story) {
-    setAudioButton(false, true);
-    try {
-      const { ok, data } = await api(`/api/story/${state.story.id}/audio`, {
-        method: 'POST',
-        body: JSON.stringify({ voiceId: state.voiceId || undefined }),
-      });
-      if (ok && data.audioUrl) {
-        state.audioMode = 'file';
-        audio.src = data.audioUrl;
-        await audio.play();
-        return;
-      }
-      if (state.voiceId) {
-        // Si la voz de la familia falla, no se sustituye en silencio por la del móvil.
-        setAudioButton(false);
-        const known = data.error && data.code !== 'no_tts';
-        return toast(known ? data.error : 'La voz de la familia no está disponible ahora. Prueba con el narrador.');
-      }
-      if (data.error && data.code !== 'no_tts') toast(data.error);
-    } catch {
-      if (state.voiceId) {
-        setAudioButton(false);
-        return toast('Sin conexión. Inténtalo de nuevo.');
-      }
+    const url = await ensureAudio();
+    if (url) {
+      state.audioMode = 'file';
+      audio.src = url;
+      await audio.play().catch(() => {});
+      return;
     }
+    // Si la voz de la familia falla, no se sustituye en silencio por la del móvil.
+    if (state.voiceId) return;
   }
   startSpeech();
+}
+
+// Devuelve la URL del audio del cuento con la voz elegida. Si ya se narró, no se vuelve
+// a pagar: se reutiliza. Si falla, avisa y devuelve null. Con required=true avisa siempre,
+// porque no hay voz del navegador que la sustituya (descargar o compartir).
+async function ensureAudio(required = false) {
+  const known = state.story.audio[state.voiceId];
+  if (known) return known;
+  setAudioButton(false, true);
+  try {
+    const { ok, data } = await api(`/api/story/${state.story.id}/audio`, {
+      method: 'POST',
+      body: JSON.stringify({ voiceId: state.voiceId || undefined }),
+    });
+    if (ok && data.audioUrl) {
+      state.story.audio[state.voiceId] = data.audioUrl;
+      return data.audioUrl;
+    }
+    setAudioButton(false);
+    if (state.voiceId) {
+      toast(data.error && data.code !== 'no_tts' ? data.error : 'La voz de la familia no está disponible ahora. Prueba con el narrador.');
+    } else if (data.error && data.code !== 'no_tts') {
+      toast(data.error);
+    } else if (required) {
+      toast('La narración no está disponible ahora. Inténtalo más tarde.');
+    }
+  } catch {
+    setAudioButton(false);
+    if (state.voiceId || required) toast('Sin conexión. Inténtalo de nuevo.');
+  }
+  return null;
 }
 
 function startSpeech() {
@@ -593,6 +617,305 @@ async function saveVoice() {
   }
 }
 
+// ---------- Perfiles de hermanos (VIP) ----------
+// Se guardan solo en este dispositivo: el servidor no necesita conocerlos.
+
+const PROFILES_KEY = 'cm_profiles';
+const MAX_PROFILES = 6;
+
+// Si el navegador no deja guardar (modo privado), se recuerda solo mientras la página esté abierta.
+const memoryStore = {};
+
+function readStore(key, fallback) {
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved !== null) return JSON.parse(saved);
+  } catch {
+    /* almacenamiento no disponible */
+  }
+  return memoryStore[key] ?? fallback;
+}
+
+function writeStore(key, value) {
+  memoryStore[key] = value;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* almacenamiento no disponible */
+  }
+}
+
+function renderProfiles() {
+  const list = $('profiles-list');
+  list.innerHTML = '';
+  const vip = allows('vip');
+  for (const p of state.profiles) {
+    const li = document.createElement('li');
+    li.className = 'flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs rounded-full pl-1 pr-1 py-0.5';
+    const pick = document.createElement('button');
+    pick.type = 'button';
+    pick.className = 'px-2 py-0.5 hover:text-white';
+    pick.textContent = `${p.name} · ${p.age}`;
+    pick.addEventListener('click', () => applyProfile(p));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'px-1.5 text-amber-300/70 hover:text-rose-300';
+    del.setAttribute('aria-label', `Borrar el perfil de ${p.name}`);
+    del.textContent = '✕';
+    del.addEventListener('click', () => deleteProfile(p));
+    li.append(pick, del);
+    list.appendChild(li);
+  }
+  $('profiles-empty').classList.toggle('hidden', state.profiles.length > 0);
+  $('save-profile-btn').classList.toggle('hidden', vip && state.profiles.length >= MAX_PROFILES);
+}
+
+function applyProfile(p) {
+  if (!allows('vip')) return openPaywall('Guarda un perfil para cada hermano con el VIP. Pruébalo 3 días gratis.');
+  $('child-name').value = p.name;
+  $('child-age').value = p.age;
+  $('companion-name').value = p.companion || '';
+  $('pet-toy').value = p.petToy || '';
+  toast(`Cuento para ${p.name}`);
+}
+
+function saveProfile() {
+  if (!allows('vip')) return openPaywall('Guarda un perfil para cada hermano, con su edad y su peluche, con el VIP. Pruébalo 3 días gratis.');
+  const name = $('child-name').value.trim();
+  if (!name) return toast('Escribe primero el nombre del peque.');
+  const profile = {
+    name: name.slice(0, 40),
+    age: parseInt($('child-age').value, 10) || 5,
+    companion: $('companion-name').value.trim().slice(0, 40),
+    petToy: $('pet-toy').value.trim().slice(0, 40),
+  };
+  const rest = state.profiles.filter((p) => p.name.toLowerCase() !== profile.name.toLowerCase());
+  if (rest.length >= MAX_PROFILES) return toast(`Puedes guardar hasta ${MAX_PROFILES} perfiles.`);
+  state.profiles = [...rest, profile];
+  writeStore(PROFILES_KEY, state.profiles);
+  renderProfiles();
+  toast(`Perfil de ${profile.name} guardado.`);
+}
+
+function deleteProfile(p) {
+  state.profiles = state.profiles.filter((x) => x !== p);
+  writeStore(PROFILES_KEY, state.profiles);
+  renderProfiles();
+}
+
+// ---------- Biblioteca ----------
+// Volver a leer y escuchar un cuento no gasta nada: el texto, la imagen y el audio ya están guardados.
+
+const OFFLINE_KEY = 'cm_offline';
+const OFFLINE_CACHE = 'cuentos-offline';
+
+async function openLibrary() {
+  stopAudio();
+  $('creator-view').classList.add('hidden');
+  $('reader-view').classList.add('hidden');
+  $('library-view').classList.remove('hidden');
+  window.scrollTo({ top: 0 });
+  const offline = readStore(OFFLINE_KEY, {});
+  try {
+    const { ok, data } = await api('/api/stories');
+    if (!ok) throw new Error();
+    state.library = data.stories || [];
+    renderLibrary(data.forever, offline, false);
+  } catch {
+    // Sin conexión: solo los cuentos descargados.
+    state.library = Object.values(offline);
+    renderLibrary(true, offline, true);
+  }
+}
+
+function renderLibrary(forever, offline, isOffline) {
+  const note = $('library-note');
+  note.innerHTML = '';
+  if (isOffline) {
+    note.textContent = 'Sin conexión: estos son los cuentos que guardaste en el dispositivo.';
+  } else if (forever) {
+    note.textContent = 'Con el VIP tus cuentos se guardan para siempre. Abre un cuento y pulsa «Guardar sin conexión» para escucharlo sin internet.';
+  } else {
+    note.append('Se guardan los cuentos de los últimos 30 días. ');
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'text-purple-300 underline';
+    more.textContent = 'Con el VIP, para siempre y sin conexión.';
+    more.addEventListener('click', () => openPaywall('Guarda todos los cuentos para siempre y escúchalos sin conexión con el VIP.'));
+    note.appendChild(more);
+  }
+
+  const list = $('library-list');
+  list.innerHTML = '';
+  for (const s of state.library) {
+    const li = document.createElement('li');
+    li.className = 'flex items-center gap-3 bg-slate-950/60 border border-slate-800 rounded-2xl p-2';
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'flex flex-1 items-center gap-3 text-left min-w-0';
+    const thumb = document.createElement(s.imageUrl ? 'img' : 'div');
+    thumb.className = 'w-14 h-14 rounded-xl object-cover bg-slate-800 shrink-0 flex items-center justify-center text-xl';
+    if (s.imageUrl) {
+      thumb.src = s.imageUrl;
+      thumb.alt = '';
+      thumb.loading = 'lazy';
+    } else {
+      thumb.textContent = '🌙';
+    }
+    const text = document.createElement('div');
+    text.className = 'min-w-0';
+    const title = document.createElement('p');
+    title.className = 'text-sm font-semibold text-amber-100 truncate';
+    title.textContent = s.titulo;
+    const meta = document.createElement('p');
+    meta.className = 'text-[11px] text-slate-400';
+    const date = new Date(s.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    meta.textContent = [s.child, `${s.minutes} min`, date, offline[s.id] ? '⬇ sin conexión' : ''].filter(Boolean).join(' · ');
+    text.append(title, meta);
+    open.append(thumb, text);
+    open.addEventListener('click', () => openSavedStory(s.id));
+    li.appendChild(open);
+    if (!isOffline) {
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'px-2 text-slate-500 hover:text-rose-300';
+      del.setAttribute('aria-label', `Borrar ${s.titulo}`);
+      del.textContent = '✕';
+      del.addEventListener('click', () => askAdult(() => deleteSavedStory(s)));
+      li.appendChild(del);
+    }
+    list.appendChild(li);
+  }
+  $('library-empty').classList.toggle('hidden', state.library.length > 0);
+}
+
+async function openSavedStory(id) {
+  try {
+    const { ok, data } = await api(`/api/story/${id}`);
+    if (!ok) return toast(data.error || 'No se pudo abrir el cuento.');
+    showStory(data, 'library');
+  } catch {
+    toast('Este cuento no está guardado sin conexión.');
+  }
+}
+
+async function deleteSavedStory(s) {
+  if (!confirm(`¿Borrar «${s.titulo}»? Se borrarán también su dibujo y sus audios.`)) return;
+  const { ok, data } = await api(`/api/story/${s.id}`, { method: 'DELETE' });
+  if (!ok) return toast(data.error || 'No se pudo borrar.');
+  await removeOffline(s.id);
+  openLibrary();
+}
+
+function renderReaderActions() {
+  const vip = allows('vip');
+  const offline = readStore(OFFLINE_KEY, {});
+  const saved = Boolean(offline[state.story.id]);
+  $('btn-offline').textContent = `${vip ? '' : '👑 '}${saved ? '✓ Guardado sin conexión' : '⬇ Guardar sin conexión'}`;
+  $('btn-share').textContent = `${vip ? '' : '👑 '}💌 Enviar a los abuelos`;
+}
+
+// VIP: guarda el cuento, su dibujo y su audio en el dispositivo para el coche o el avión.
+async function saveOffline() {
+  if (!allows('vip')) return openPaywall('Descarga los cuentos para escucharlos en el coche o en el avión con el VIP. Pruébalo 3 días gratis.');
+  if (!('caches' in window)) return toast('Este navegador no permite guardar sin conexión.');
+  const s = state.story;
+  const btn = $('btn-offline');
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+  try {
+    const audioUrl = await ensureAudio(true);
+    setAudioButton(state.audioMode === 'file' && !$('story-audio').paused);
+    if (!audioUrl) return;
+    const cache = await caches.open(OFFLINE_CACHE);
+    await cache.addAll([`/api/story/${s.id}`, audioUrl, ...(s.imageUrl ? [s.imageUrl] : [])]);
+    const offline = readStore(OFFLINE_KEY, {});
+    const entry = state.library.find((e) => e.id === s.id) || {};
+    offline[s.id] = { id: s.id, titulo: s.titulo, minutes: s.minutes, imageUrl: s.imageUrl, child: entry.child, createdAt: s.createdAt || Date.now() };
+    writeStore(OFFLINE_KEY, offline);
+    toast('Guardado. Lo encontrarás en «Mis cuentos» aunque no haya conexión.');
+  } catch {
+    toast('No se pudo guardar sin conexión. Inténtalo con conexión.');
+  } finally {
+    btn.disabled = false;
+    renderReaderActions();
+  }
+}
+
+async function removeOffline(id) {
+  const offline = readStore(OFFLINE_KEY, {});
+  if (!offline[id]) return;
+  delete offline[id];
+  writeStore(OFFLINE_KEY, offline);
+  if (!('caches' in window)) return;
+  const cache = await caches.open(OFFLINE_CACHE);
+  for (const req of await cache.keys()) {
+    if (req.url.includes(id)) await cache.delete(req);
+  }
+}
+
+// ---------- Enlace para los abuelos (VIP) ----------
+
+let shareStoryId = null;
+
+function shareStory() {
+  if (!allows('vip')) return openPaywall('Envía el cuento a los abuelos para que lo escuchen desde su móvil, con el VIP. Pruébalo 3 días gratis.');
+  askAdult(createShareLink);
+}
+
+async function createShareLink() {
+  const btn = $('btn-share');
+  btn.disabled = true;
+  try {
+    const audioUrl = await ensureAudio(true);
+    setAudioButton(state.audioMode === 'file' && !$('story-audio').paused);
+    if (!audioUrl) return;
+    const { ok, data } = await api(`/api/story/${state.story.id}/share`, {
+      method: 'POST',
+      body: JSON.stringify({ voiceId: state.voiceId || undefined }),
+    });
+    if (!ok) return toast(data.error || 'No se pudo crear el enlace.');
+    shareStoryId = state.story.id;
+    $('share-url').value = data.url;
+    $('share-send').classList.toggle('hidden', !navigator.share);
+    $('share-modal').classList.remove('hidden');
+  } catch {
+    toast('Sin conexión. Inténtalo de nuevo.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function closeShare() {
+  $('share-modal').classList.add('hidden');
+}
+
+async function copyShareLink() {
+  const url = $('share-url').value;
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Enlace copiado. Pégalo en WhatsApp para los abuelos.');
+  } catch {
+    $('share-url').select();
+    toast('Mantén pulsado el enlace para copiarlo.');
+  }
+}
+
+async function sendShareLink() {
+  try {
+    await navigator.share({ title: state.story?.titulo || 'Un cuento', text: 'Escucha el cuento de esta noche 🌙', url: $('share-url').value });
+  } catch {
+    /* el usuario cerró el menú */
+  }
+}
+
+async function revokeShareLink() {
+  if (!shareStoryId) return;
+  const { ok } = await api(`/api/story/${shareStoryId}/share`, { method: 'DELETE' });
+  closeShare();
+  toast(ok ? 'Enlace desactivado. Ya nadie puede abrirlo.' : 'No se pudo desactivar el enlace.');
+}
+
 // ---------- Suscripción ----------
 
 // Siempre se abre con el VIP elegido: es el plan que queremos que compare primero.
@@ -716,6 +1039,18 @@ async function handleCheckoutReturn() {
 
 function bind() {
   $('generate-btn').addEventListener('click', generate);
+  $('library-btn').addEventListener('click', openLibrary);
+  $('close-library').addEventListener('click', () => {
+    $('library-view').classList.add('hidden');
+    $('creator-view').classList.remove('hidden');
+  });
+  $('save-profile-btn').addEventListener('click', saveProfile);
+  $('btn-offline').addEventListener('click', () => saveOffline());
+  $('btn-share').addEventListener('click', shareStory);
+  $('close-share').addEventListener('click', closeShare);
+  $('share-copy').addEventListener('click', () => copyShareLink());
+  $('share-send').addEventListener('click', sendShareLink);
+  $('share-revoke').addEventListener('click', () => askAdult(revokeShareLink));
   $('close-reader').addEventListener('click', closeReader);
   $('btn-audio').addEventListener('click', toggleAudio);
   $('close-paywall').addEventListener('click', closePaywall);
@@ -793,6 +1128,7 @@ function bind() {
     if (e.key !== 'Escape') return;
     if (!$('gate-modal').classList.contains('hidden')) closeGate();
     else if (!$('voice-modal').classList.contains('hidden')) closeVoiceModal();
+    else if (!$('share-modal').classList.contains('hidden')) closeShare();
     else if (!$('paywall-modal').classList.contains('hidden')) closePaywall();
   });
 
@@ -811,6 +1147,7 @@ function bind() {
   });
 }
 
+state.profiles = readStore(PROFILES_KEY, []);
 bind();
 render();
 loadMe().then(handleCheckoutReturn);

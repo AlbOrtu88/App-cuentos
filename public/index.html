@@ -21,7 +21,19 @@
 
     <!-- FORMULARIO -->
     <main id="creator-view" class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-3.5">
-      <div id="quota-badge" class="hidden text-center text-[11px] font-medium py-1 px-3 rounded-full border"></div>
+      <div class="flex items-center gap-2">
+        <div id="quota-badge" class="hidden flex-1 text-center text-[11px] font-medium py-1 px-3 rounded-full border"></div>
+        <button id="library-btn" type="button" class="shrink-0 text-[11px] font-medium py-1 px-3 rounded-full border border-slate-700 text-amber-300 hover:bg-slate-800">📚 Mis cuentos</button>
+      </div>
+
+      <section id="profiles-section" aria-label="Perfiles de los peques">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="field-label mb-0">Peques de la casa <span class="text-purple-300">👑 VIP</span></span>
+          <button id="save-profile-btn" type="button" class="text-[11px] text-amber-400 hover:underline">+ Guardar perfil</button>
+        </div>
+        <ul id="profiles-list" class="flex flex-wrap gap-2"></ul>
+        <p id="profiles-empty" class="text-[11px] text-slate-500">Guarda el nombre, la edad y el peluche de cada hermano para no escribirlos cada noche.</p>
+      </section>
 
       <div class="grid grid-cols-2 gap-2.5">
         <div>
@@ -98,6 +110,17 @@
       </div>
     </main>
 
+    <!-- BIBLIOTECA -->
+    <section id="library-view" class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <button id="close-library" type="button" class="text-xs text-amber-400 hover:underline">← Crear otro</button>
+        <h2 class="text-sm font-bold text-amber-200">📚 Mis cuentos</h2>
+      </div>
+      <p id="library-note" class="text-[11px] text-slate-400"></p>
+      <ul id="library-list" class="space-y-2"></ul>
+      <p id="library-empty" class="hidden text-center text-xs text-slate-500 py-6">Aquí aparecerán los cuentos que crees. Volver a leerlos y escucharlos es gratis.</p>
+    </section>
+
     <!-- LECTURA -->
     <article id="reader-view" class="hidden bg-stone-900 border border-stone-800 rounded-3xl p-6 shadow-2xl space-y-5 text-stone-200">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800 pb-3">
@@ -109,6 +132,10 @@
           </button>
           <span id="reading-badge" class="whitespace-nowrap text-[11px] text-stone-400 bg-stone-950 px-2.5 py-0.5 rounded-full"></span>
         </div>
+      </div>
+      <div id="reader-actions" class="flex flex-wrap justify-center gap-2 text-[11px]">
+        <button id="btn-offline" type="button" class="px-3 py-1 rounded-full border border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-200">⬇ Guardar sin conexión</button>
+        <button id="btn-share" type="button" class="px-3 py-1 rounded-full border border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-200">💌 Enviar a los abuelos</button>
       </div>
       <audio id="story-audio" preload="none" class="hidden"></audio>
       <h2 id="story-title" class="text-xl font-bold text-amber-100 text-center leading-snug"></h2>
@@ -146,7 +173,7 @@
             <span class="text-lg font-black text-white" id="price-standard"></span>
           </div>
           <p class="text-[11px] text-slate-400" id="subtext-standard"></p>
-          <p class="text-[11px] text-slate-300 mt-1.5">Cuentos ilimitados de 2 a 5 min · 4 estilos · Narrador 1 h al mes</p>
+          <p class="text-[11px] text-slate-300 mt-1.5">Cuentos ilimitados de 2 a 5 min · 4 estilos · Narrador 1 h al mes · Biblioteca de 30 días</p>
         </div>
 
         <div id="card-vip" role="radio" tabindex="0" class="plan-card relative bg-purple-500/10 rounded-2xl p-4 pt-5 cursor-pointer">
@@ -159,6 +186,8 @@
           <ul class="text-[11px] space-y-1 text-slate-200 mt-2">
             <li>✓ Hasta 6 voces de la familia: papá, mamá, abuelos, tíos</li>
             <li>✓ 2 horas al mes con sus voces</li>
+            <li>✓ Biblioteca para siempre y sin conexión, para el coche o el avión</li>
+            <li>✓ Perfiles de hermanos y enlace para que los abuelos escuchen</li>
             <li>✓ Cuentos de 10 min y 10 estilos</li>
             <li>✓ 3 días de prueba gratis</li>
           </ul>
@@ -170,7 +199,7 @@
             <span class="text-lg font-black text-white" id="price-pro"></span>
           </div>
           <p class="text-[11px] text-slate-400" id="subtext-pro"></p>
-          <p class="text-[11px] text-slate-300 mt-1.5">Cuentos de 10 min · 10 estilos · 1 voz de la familia, 20 min al mes</p>
+          <p class="text-[11px] text-slate-300 mt-1.5">Cuentos de 10 min · 10 estilos · 1 voz de la familia, 20 min al mes · Biblioteca de 30 días</p>
         </div>
       </div>
 
@@ -272,6 +301,21 @@
           <button id="save-voice" type="button" disabled class="flex-[2] bg-amber-500 disabled:opacity-40 text-slate-950 font-bold py-3 rounded-2xl">Guardar voz</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ENLACE PARA LOS ABUELOS -->
+  <div id="share-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <div class="my-auto w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 relative">
+      <button id="close-share" type="button" aria-label="Cerrar" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 text-lg p-2 leading-none">✕</button>
+      <h2 id="share-title" class="text-lg font-bold text-white">💌 Para los abuelos</h2>
+      <p class="text-xs text-slate-400">Quien tenga este enlace podrá leer y escuchar este cuento desde su móvil, sin instalar nada. Incluye el nombre del peque. Puedes desactivarlo cuando quieras.</p>
+      <input id="share-url" type="text" readonly class="field text-xs" aria-label="Enlace del cuento">
+      <div class="flex gap-2">
+        <button id="share-copy" type="button" class="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200 text-sm">Copiar</button>
+        <button id="share-send" type="button" class="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-sm">Enviar</button>
+      </div>
+      <button id="share-revoke" type="button" class="w-full text-[11px] text-rose-300 hover:underline">Desactivar el enlace</button>
     </div>
   </div>
 

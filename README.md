@@ -9,7 +9,16 @@ PWA de cuentos infantiles personalizados para la hora de dormir. Un único Worke
 - **Plan gratis**: 3 cuentos y voz del propio móvil.
 - **Pagos**: Stripe Checkout (3 días de prueba solo en el VIP), portal de cliente y webhook.
 
+- **Biblioteca**: «Mis cuentos» guarda cada cuento con su dibujo y sus audios, así que volver a leerlo o escucharlo no gasta nada en IA.
+
 El plan y la cuota se guardan en el servidor (KV), no en el navegador.
+
+### Extras del VIP
+
+- **Biblioteca para siempre**: los demás planes ven los cuentos de los últimos 30 días; la tarea diaria del Worker borra los más antiguos (claves `exp:` en KV). Si alguien deja el VIP, sus cuentos se conservan 30 días más.
+- **Sin conexión**: el botón «Guardar sin conexión» guarda el cuento, el dibujo y el audio en la caché `cuentos-offline` del navegador; el service worker los sirve cuando no hay red.
+- **Perfiles de hermanos**: nombre, edad, acompañante y juguete de cada peque, guardados solo en el dispositivo (`localStorage`).
+- **Enlace para los abuelos**: `/c/{token}` abre una página pública con el cuento y su audio. Deja de funcionar si se desactiva, se borra el cuento o la familia deja el VIP.
 
 ## Planes
 
@@ -21,6 +30,9 @@ El plan y la cuota se guardan en el servidor (KV), no en el navegador.
 | Estilos | 1 | 4 | 10 | 10 |
 | Narrador natural | Voz del móvil | 1 h al mes | 2 h 30 min al mes | 3 h 20 min al mes en total |
 | Voces de la familia | No | No | 1 voz, 20 min al mes | Hasta 6 voces, 2 h al mes |
+| Biblioteca (Mis cuentos) | 30 días | 30 días | 30 días | Para siempre y sin conexión |
+| Perfiles de hermanos | No | No | No | Hasta 6 (en el dispositivo) |
+| Enlace para los abuelos | No | No | No | Sí |
 | Prueba gratis | | No | No | 3 días |
 
 El Pro es la opción ancla: cuesta 2 € menos que el VIP para que el VIP parezca la compra lógica. La pantalla de pago se abre siempre con el VIP elegido. Los topes de minutos están en `src/config.js` (`PLAN_LIMITS`).
@@ -52,7 +64,7 @@ Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del nave
    npx wrangler kv namespace create DATA        # pega el id en wrangler.toml
    npx wrangler r2 bucket create cuentos-magicos-media
    ```
-   En el panel de R2 añade una regla de ciclo de vida que borre `img/` y `audio/` a los 90 días (los cuentos caducan a los 90 días). **No** la apliques a `voicesrc/`.
+   **No** añadas reglas de ciclo de vida en R2: los cuentos del VIP se guardan para siempre. La tarea diaria del Worker borra los cuentos de los demás planes a los 30 días, con su imagen y sus audios.
 
    Hace falta el plan **Workers Paid (5 $/mes)**: un cuento de 10 minutos con voz de la familia hace unas 60 peticiones a fal.ai y el plan gratis permite 50.
 
@@ -92,5 +104,4 @@ Chatterbox cuesta 0,025 $ por 1.000 caracteres: unos 0,09 $ un cuento de 5 minut
 
 ## Pendiente
 
-- Avatar del peque en las ilustraciones.
 - Recuperar la suscripción en otro dispositivo (hoy va ligada a la cookie del navegador; el portal de Stripe permite gestionarla, pero no mover el plan a otro móvil).

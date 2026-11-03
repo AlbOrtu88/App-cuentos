@@ -10,9 +10,11 @@ import { generateImage, generateStoryText, synthesizeClonedSpeech, synthesizeSpe
 import { signPath, verifySignedPath } from './sign.js';
 import { inspectWav } from './wav.js';
 import { planFromSubscription, stripeRequest, verifyStripeSignature } from './stripe.js';
+import {
+  addToLibrary, deleteStory, findEntry, keepsForever, listLibrary, newShareToken, purgeExpiredStories, startLibraryGrace,
+} from './library.js';
 
 const COOKIE = 'cm_uid';
-const STORY_TTL = 60 * 60 * 24 * 90; // los cuentos se guardan 90 días
 
 export { purgeExpiredVoices, scheduleVoicePurge };
 
@@ -29,6 +31,13 @@ export default {
       if (path.startsWith('/media/voicesrc/') && request.method === 'GET') {
         return await serveVoiceSample(env, url);
       }
+
+      // Enlace para los abuelos: página pública y sus datos (sin cookie de sesión).
+      if (/^\/c\/[a-f0-9]{32}$/.test(path) && request.method === 'GET') {
+        return env.ASSETS.fetch(new Request(new URL('/escuchar', url), request));
+      }
+      const sharedMatch = path.match(/^\/api\/shared\/([a-f0-9]{32})$/);
+      if (sharedMatch && request.method === 'GET') return await handleShared(env, sharedMatch[1]);
 
       if (path.startsWith('/media/') && request.method === 'GET') {
         return await serveMedia(env, path.slice('/media/'.length));
@@ -51,9 +60,10 @@ export default {
     }
   },
 
-  // Tarea diaria (cron en wrangler.toml): borra las voces 30 días después de dejar el VIP.
+  // Tarea diaria (cron en wrangler.toml): borra las voces 30 días después de dejar el plan
+  // y los cuentos que ya no entran en la biblioteca del plan.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(purgeExpiredVoices(env));
+    ctx.waitUntil(Promise.all([purgeExpiredVoices(env), purgeExpiredStories(env)]));
   },
 };
 
@@ -63,6 +73,15 @@ async function routeApi(request, env, url, session) {
   if (path === '/api/generate-story' && method === 'POST') return handleGenerate(request, env, url, session);
   const audioMatch = path.match(/^\/api\/story\/([a-z0-9-]+)\/audio$/);
   if (audioMatch && method === 'POST') return handleAudio(request, env, url, session, audioMatch[1]);
+  if (path === '/api/stories' && method === 'GET') {
+    return json({ stories: await listLibrary(env, session.uid, session.user.plan), forever: keepsForever(session.user.plan) });
+  }
+  const storyMatch = path.match(/^\/api\/story\/([a-f0-9-]{36})$/);
+  if (storyMatch && method === 'GET') return handleGetStory(env, session, storyMatch[1]);
+  if (storyMatch && method === 'DELETE') return handleDeleteStory(env, session, storyMatch[1]);
+  const shareMatch = path.match(/^\/api\/story\/([a-f0-9-]{36})\/share$/);
+  if (shareMatch && method === 'POST') return handleShare(request, env, url, session, shareMatch[1]);
+  if (shareMatch && method === 'DELETE') return handleUnshare(env, session, shareMatch[1]);
   if (path === '/api/voices' && method === 'GET') return json({ voices: publicVoices(session.user), max: limitsFor(session.user.plan).voices });
   if (path === '/api/voices' && method === 'POST') return handleAddVoice(request, env, url, session);
   const voiceMatch = path.match(/^\/api\/voices\/([a-f0-9-]{36})$/);
@@ -178,11 +197,12 @@ async function handleGenerate(request, env, url, session) {
     console.error('[IMAGEN]', err.message);
   }
 
+  const createdAt = Date.now();
   await env.DATA.put(
     `story:${id}`,
-    JSON.stringify({ uid, titulo: story.titulo, parrafos: story.parrafos, imageUrl, minutes: duration }),
-    { expirationTtl: STORY_TTL },
+    JSON.stringify({ uid, titulo: story.titulo, parrafos: story.parrafos, imageUrl, minutes: duration, createdAt, audio: [] }),
   );
+  await addToLibrary(env, uid, user.plan, { id, titulo: story.titulo, minutes: duration, imageUrl, child: input.name, createdAt });
 
   if (user.plan === 'free') {
     user.freeUsed = (user.freeUsed || 0) + 1;
@@ -195,6 +215,8 @@ async function handleGenerate(request, env, url, session) {
     parrafos: story.parrafos,
     imageUrl,
     minutes: duration,
+    createdAt,
+    audio: {},
     freeRemaining: user.plan === 'free' ? Math.max(0, FREE_STORY_LIMIT - user.freeUsed) : null,
   });
 }
@@ -229,7 +251,9 @@ async function handleAudio(request, env, url, session, id) {
   }
 
   const story = await env.DATA.get(`story:${id}`, 'json');
-  if (!story || story.uid !== uid) return json({ error: 'Cuento no encontrado' }, 404);
+  if (!story || story.uid !== uid || !(await findEntry(env, uid, user.plan, id))) {
+    return json({ error: 'Cuento no encontrado' }, 404);
+  }
 
   const key = voice ? `audio/${voice.id}/${id}` : `audio/${id}`;
   // Si el audio ya existe se reutiliza: repetir un cuento no cuesta nada.
@@ -276,7 +300,102 @@ async function handleAudio(request, env, url, session, id) {
   await env.MEDIA.put(key, bytes, { httpMetadata: { contentType } });
   user[counter] = (user[counter] || 0) + text.length;
   await saveUser(env, uid, user);
+  story.audio = [...new Set([...(story.audio || []), key])];
+  await env.DATA.put(`story:${id}`, JSON.stringify(story));
   return json({ audioUrl: `/media/${key}` });
+}
+
+// ---------- Biblioteca ----------
+
+// Audios ya narrados que se pueden reproducir: { '': narrador, voiceId: voz de la familia }.
+// Los de voces borradas o que el plan ya no cubre no se devuelven.
+function audioMap(story, id, user) {
+  const voices = new Set(usableVoices(user).map((v) => v.id));
+  const map = {};
+  for (const key of story.audio || []) {
+    if (key === `audio/${id}`) map[''] = `/media/${key}`;
+    else if (voices.has(key.split('/')[1])) map[key.split('/')[1]] = `/media/${key}`;
+  }
+  return map;
+}
+
+async function handleGetStory(env, session, id) {
+  const { uid, user } = session;
+  const entry = await findEntry(env, uid, user.plan, id);
+  const story = entry && (await env.DATA.get(`story:${id}`, 'json'));
+  if (!story || story.uid !== uid) return json({ error: 'Este cuento ya no está en tu biblioteca.' }, 404);
+  return json({
+    id,
+    titulo: story.titulo,
+    parrafos: story.parrafos,
+    imageUrl: story.imageUrl,
+    minutes: story.minutes,
+    createdAt: entry.createdAt,
+    audio: audioMap(story, id, user),
+    shared: Boolean(story.shareToken),
+  });
+}
+
+async function handleDeleteStory(env, session, id) {
+  await deleteStory(env, session.uid, id);
+  return json({ ok: true });
+}
+
+// ---------- Enlace para los abuelos (VIP) ----------
+
+async function handleShare(request, env, url, session, id) {
+  const { uid, user } = session;
+  if (!keepsForever(user.plan)) {
+    return json({ error: 'El enlace para los abuelos está en el plan VIP.', code: 'upgrade', needed: 'vip' }, 402);
+  }
+  const story = await env.DATA.get(`story:${id}`, 'json');
+  if (!story || story.uid !== uid) return json({ error: 'Cuento no encontrado' }, 404);
+  const body = await request.json().catch(() => ({}));
+  const audioKey = body.voiceId ? `audio/${body.voiceId}/${id}` : `audio/${id}`;
+  if (!(story.audio || []).includes(audioKey)) {
+    return json({ error: 'Escucha el cuento con esa voz antes de compartirlo.', code: 'no_audio' }, 400);
+  }
+  const token = story.shareToken || newShareToken();
+  await env.DATA.put(`share:${token}`, JSON.stringify({ uid, storyId: id, audioKey, createdAt: Date.now() }));
+  if (story.shareToken !== token) {
+    story.shareToken = token;
+    await env.DATA.put(`story:${id}`, JSON.stringify(story));
+  }
+  return json({ url: `${url.origin}/c/${token}` });
+}
+
+async function handleUnshare(env, session, id) {
+  const story = await env.DATA.get(`story:${id}`, 'json');
+  if (!story || story.uid !== session.uid) return json({ error: 'Cuento no encontrado' }, 404);
+  if (story.shareToken) {
+    await env.DATA.delete(`share:${story.shareToken}`);
+    delete story.shareToken;
+    await env.DATA.put(`story:${id}`, JSON.stringify(story));
+  }
+  return json({ ok: true });
+}
+
+// Lo que ve quien abre el enlace: el cuento y su audio, nada más.
+async function handleShared(env, token) {
+  const share = await env.DATA.get(`share:${token}`, 'json');
+  const gone = () => json({ error: 'Este enlace ya no está activo.' }, 404);
+  if (!share) return gone();
+  const [owner, story] = await Promise.all([
+    env.DATA.get(`user:${share.uid}`, 'json'),
+    env.DATA.get(`story:${share.storyId}`, 'json'),
+  ]);
+  if (owner && env.DEV_PLAN && env.ENVIRONMENT !== 'production') owner.plan = env.DEV_PLAN;
+  // El enlace solo funciona mientras la familia siga en el VIP.
+  if (!story || !owner || story.uid !== share.uid || !keepsForever(owner.plan)) return gone();
+  const audio = audioMap(story, share.storyId, owner);
+  const voiceId = share.audioKey === `audio/${share.storyId}` ? '' : share.audioKey.split('/')[1];
+  return json({
+    titulo: story.titulo,
+    parrafos: story.parrafos,
+    imageUrl: story.imageUrl,
+    minutes: story.minutes,
+    audioUrl: audio[voiceId] || null,
+  });
 }
 
 // ---------- Voces de la familia (VIP) ----------
@@ -486,7 +605,9 @@ async function handleStripeWebhook(request, env) {
     const uid = obj.client_reference_id || obj.metadata?.uid;
     if (uid) {
       const user = (await env.DATA.get(`user:${uid}`, 'json')) || { plan: 'free', freeUsed: 0 };
+      const before = user.plan;
       user.plan = ['pro', 'vip'].includes(obj.metadata?.plan) ? obj.metadata.plan : 'standard';
+      if (keepsForever(before) && !keepsForever(user.plan)) await startLibraryGrace(env, uid);
       user.customerId = obj.customer;
       user.subscriptionId = obj.subscription;
       if (user.plan === 'vip') user.hadTrial = true;
@@ -499,7 +620,9 @@ async function handleStripeWebhook(request, env) {
     const uid = obj.metadata?.uid;
     if (uid) {
       const user = (await env.DATA.get(`user:${uid}`, 'json')) || { plan: 'free', freeUsed: 0 };
+      const before = user.plan;
       user.plan = event.type === 'customer.subscription.deleted' ? 'free' : planFromSubscription(obj);
+      if (keepsForever(before) && !keepsForever(user.plan)) await startLibraryGrace(env, uid);
       user.customerId = obj.customer;
       user.subscriptionId = obj.id;
       await scheduleVoicePurge(env, uid, user);

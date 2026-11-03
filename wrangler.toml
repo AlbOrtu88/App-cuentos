@@ -19,7 +19,7 @@ id = "REEMPLAZAR_CON_ID_DE_KV"
 binding = "MEDIA"
 bucket_name = "cuentos-magicos-media"
 
-# Tarea diaria: borra las voces 30 días después de dejar el VIP.
+# Tarea diaria: borra las voces que el plan ya no cubre y los cuentos que salen de la biblioteca.
 [triggers]
 crons = ["0 3 * * *"]
 
