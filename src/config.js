@@ -15,7 +15,7 @@ export const DURATIONS = { 2: 'free', 3: 'free', 5: 'standard', 10: 'pro' };
 
 // Estilos de ilustración: id → prompt y plan mínimo.
 export const STYLES = {
-  watercolor: { plan: 'free', label: 'Acuarela suave', prompt: 'warm hand-painted watercolor storybook illustration, delicate ink linework, textured watercolor paper, soft golden glow, lush foliage with small white daisies and pink blossoms, cute characters with round faces and rosy cheeks, gentle pastel palette with peach and lavender twilight sky' },
+  watercolor: { plan: 'free', label: 'Acuarela suave', prompt: 'warm hand-painted watercolor storybook illustration, delicate ink linework, textured watercolor paper, soft golden glow, lush foliage with small white daisies and pink blossoms, cute characters with round faces and rosy cheeks, warm cream, leafy green and soft pink pastel palette, soft golden light' },
   pixar: { plan: 'standard', label: '3D Pixar', prompt: 'cute 3d animation style character render, cozy volumetric lighting' },
   vintage: { plan: 'standard', label: 'Cuento clásico', prompt: 'classic vintage golden book illustration, beatrix potter aesthetic, textured paper' },
   coloring: { plan: 'standard', label: 'Lámina para colorear', prompt: 'clean thick line coloring book page, black and white outline drawing, blank white background' },

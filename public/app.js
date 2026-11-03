@@ -24,7 +24,7 @@ const STYLES = [
   { id: 'felt', plan: 'pro', label: 'Fieltro y lana' },
   { id: 'pencil', plan: 'pro', label: 'Lápiz de color' },
 ];
-const PER_MONTH = '<span class="text-xs font-normal text-noche-400">/mes</span>';
+const PER_MONTH = '<span class="text-xs font-normal text-papel-400">/mes</span>';
 const PRICES = {
   annual: {
     standard: { price: `3,33 €${PER_MONTH}`, sub: 'Se factura 39,99 € al año', cta: '39,99 €/año' },
@@ -109,13 +109,13 @@ function renderQuota() {
   badge.className = 'text-center text-xs font-medium py-1 px-3 rounded-full border';
   if (state.plan !== 'free') {
     badge.textContent = `Plan ${PLAN_NAMES[state.plan]} · cuentos ilimitados`;
-    badge.classList.add('bg-emerald-500/10', 'text-emerald-300', 'border-emerald-500/30');
+    badge.classList.add('bg-emerald-500/10', 'text-emerald-700', 'border-emerald-500/30');
   } else if (state.freeRemaining > 0) {
     badge.textContent = `Tienes ${state.freeRemaining} de 3 cuentos gratis`;
-    badge.classList.add('bg-melocoton-500/10', 'text-melocoton-300', 'border-melocoton-500/30');
+    badge.classList.add('bg-terracota-500/10', 'text-terracota-300', 'border-terracota-500/30');
   } else {
     badge.textContent = 'Has usado tus 3 cuentos gratis';
-    badge.classList.add('bg-rose-500/10', 'text-rose-300', 'border-rose-500/30');
+    badge.classList.add('bg-rose-500/10', 'text-rose-700', 'border-rose-500/30');
   }
 }
 
@@ -380,7 +380,7 @@ function startSpeech() {
 
 function highlight(index) {
   document.querySelectorAll('#story-content p').forEach((p) => {
-    p.classList.toggle('bg-melocoton-400/10', Number(p.dataset.index) === index);
+    p.classList.toggle('bg-terracota-400/10', Number(p.dataset.index) === index);
   });
 }
 
@@ -406,7 +406,7 @@ function renderVoices() {
     name.textContent = v.name;
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'tap-chip text-lavanda-300 hover:text-rose-300';
+    del.className = 'tap-chip text-lavanda-300 hover:text-rose-700';
     del.setAttribute('aria-label', `Borrar la voz de ${v.name}`);
     del.textContent = '✕';
     del.addEventListener('click', () => askAdult(() => deleteVoice(v)));
@@ -651,15 +651,15 @@ function renderProfiles() {
   const vip = allows('vip');
   for (const p of state.profiles) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-1 bg-melocoton-500/10 border border-melocoton-500/30 text-melocoton-200 text-xs rounded-full pl-1 pr-1 py-1';
+    li.className = 'flex items-center gap-1 bg-terracota-500/10 border border-terracota-500/30 text-terracota-200 text-xs rounded-full pl-1 pr-1 py-1';
     const pick = document.createElement('button');
     pick.type = 'button';
-    pick.className = 'tap-chip px-2 hover:text-noche-50';
+    pick.className = 'tap-chip px-2 hover:text-papel-50';
     pick.textContent = `${p.name} · ${p.age}`;
     pick.addEventListener('click', () => applyProfile(p));
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'tap-chip text-melocoton-300/70 hover:text-rose-300';
+    del.className = 'tap-chip text-terracota-300/70 hover:text-rose-700';
     del.setAttribute('aria-label', `Borrar el perfil de ${p.name}`);
     del.textContent = '✕';
     del.addEventListener('click', () => deleteProfile(p));
@@ -749,12 +749,12 @@ function renderLibrary(forever, offline, isOffline) {
   list.innerHTML = '';
   for (const s of state.library) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-3 bg-noche-950/60 border border-noche-800 rounded-2xl p-2';
+    li.className = 'flex items-center gap-3 bg-papel-950/60 border border-papel-800 rounded-2xl p-2';
     const open = document.createElement('button');
     open.type = 'button';
     open.className = 'flex flex-1 items-center gap-3 text-left min-w-0';
     const thumb = document.createElement(s.imageUrl ? 'img' : 'div');
-    thumb.className = 'w-14 h-14 rounded-xl object-cover bg-noche-800 shrink-0 flex items-center justify-center text-xl';
+    thumb.className = 'w-14 h-14 rounded-xl object-cover bg-papel-800 shrink-0 flex items-center justify-center text-xl';
     if (s.imageUrl) {
       thumb.src = s.imageUrl;
       thumb.alt = '';
@@ -765,10 +765,10 @@ function renderLibrary(forever, offline, isOffline) {
     const text = document.createElement('div');
     text.className = 'min-w-0';
     const title = document.createElement('p');
-    title.className = 'text-sm font-semibold text-melocoton-100 truncate';
+    title.className = 'text-sm font-semibold text-terracota-100 truncate';
     title.textContent = s.titulo;
     const meta = document.createElement('p');
-    meta.className = 'text-xs text-noche-400';
+    meta.className = 'text-xs text-papel-400';
     const date = new Date(s.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     meta.textContent = [s.child, `${s.minutes} min`, date, offline[s.id] ? '⬇ sin conexión' : ''].filter(Boolean).join(' · ');
     text.append(title, meta);
@@ -778,7 +778,7 @@ function renderLibrary(forever, offline, isOffline) {
     if (!isOffline) {
       const del = document.createElement('button');
       del.type = 'button';
-      del.className = 'tap-icon text-noche-500 hover:text-rose-300';
+      del.className = 'tap-icon text-papel-500 hover:text-rose-700';
       del.setAttribute('aria-label', `Borrar ${s.titulo}`);
       del.textContent = '✕';
       del.addEventListener('click', () => askAdult(() => deleteSavedStory(s)));

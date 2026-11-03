@@ -3,7 +3,7 @@
 PWA de cuentos infantiles personalizados para la hora de dormir. Un único Worker de Cloudflare sirve la app (carpeta `public/`) y la API (`src/`).
 
 - **Texto**: Gemini 2.5 Flash, sin razonamiento y con salida JSON.
-- **Ilustración**: FLUX schnell en fal.ai (una por cuento). Sin `FAL_KEY` usa Pollinations, solo para pruebas.
+- **Ilustración**: Gemini 3.1 Flash Lite Image (una por cuento, ≈ 0,034 $), elegido en `IMAGE_MODEL`. Con `IMAGE_MODEL="flux"` usa FLUX schnell en fal.ai; sin claves, Pollinations (solo para pruebas).
 - **Narrador** (planes de pago): Google Cloud TTS Chirp 3 HD. El MP3 se guarda en R2 y repetir un cuento no cuesta nada.
 - **Voces de la familia** (Pro y VIP): Chatterbox Multilingual en fal.ai. El Pro guarda 1 voz y el VIP hasta 6 (papá, mamá, abuelos, tíos...); se elige cuál narra cada cuento.
 - **Plan gratis**: 3 cuentos y voz del propio móvil.

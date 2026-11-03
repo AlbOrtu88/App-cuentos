@@ -27,6 +27,9 @@ crons = ["0 3 * * *"]
 ENVIRONMENT = "production"
 # Voz de Google Chirp 3 HD en español de España.
 TTS_VOICE = "es-ES-Chirp3-HD-Aoede"
+# Modelo de las ilustraciones. "gemini-3.1-flash-lite-image" ≈ 0,034 $ por imagen, acuarela detallada.
+# Pon "flux" para volver a FLUX schnell en fal.ai (≈ 0,0015 $, menos detalle).
+IMAGE_MODEL = "gemini-3.1-flash-lite-image"
 # Límites anti-abuso. Los minutos de voz de cada plan están en src/config.js.
 FREE_DAILY_IP_LIMIT = "10"
 PAID_DAILY_LIMIT = "20"

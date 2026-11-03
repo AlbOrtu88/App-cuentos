@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#17121F">
+  <meta name="theme-color" content="#FBF5E8">
   <meta name="description" content="Cuentos personalizados con valores para la hora de dormir.">
   <title>Cuentos Mágicos</title>
   <link rel="manifest" href="/manifest.webmanifest">
@@ -11,31 +11,31 @@
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="bg-noche-950 text-noche-100 min-h-screen flex flex-col items-center p-3 font-sans antialiased">
+<body class="bg-papel-950 text-papel-100 min-h-screen flex flex-col items-center p-3 font-sans antialiased">
 
   <div class="w-full max-w-md mx-auto my-2">
-    <header class="relative mb-4 overflow-hidden rounded-3xl border border-noche-800 aspect-[16/9] bg-noche-800">
+    <header class="relative mb-4 overflow-hidden rounded-3xl border border-papel-800 aspect-[16/9] bg-papel-800">
       <img src="/img/cabecera.webp" alt="" width="960" height="536" class="absolute inset-0 w-full h-full object-cover">
-      <div class="absolute right-4 bottom-4 w-[52%] text-right">
-        <h1 class="text-2xl font-bold tracking-tight leading-tight text-noche-950">Cuentos Mágicos</h1>
-        <p class="text-xs font-semibold text-noche-800 mt-1">Historias personalizadas con valores para dormir</p>
+      <div class="absolute right-4 top-[16%] w-[48%] text-center">
+        <h1 class="text-2xl font-bold tracking-tight leading-tight text-papel-50">Cuentos Mágicos</h1>
+        <p class="text-xs font-semibold text-papel-300 mt-1">Historias personalizadas con valores para dormir</p>
       </div>
     </header>
 
     <!-- FORMULARIO -->
-    <main id="creator-view" class="bg-noche-900 border border-noche-800 rounded-3xl p-5 shadow-2xl space-y-3.5">
+    <main id="creator-view" class="bg-papel-900 border border-papel-800 rounded-3xl p-5 shadow-2xl space-y-3.5">
       <div class="flex items-center gap-2">
         <div id="quota-badge" class="hidden flex-1 text-center text-xs font-medium py-1 px-3 rounded-full border"></div>
-        <button id="library-btn" type="button" class="tap shrink-0 text-xs font-medium py-1 px-3 rounded-full border border-noche-700 text-melocoton-300 hover:bg-noche-800">📚 Mis cuentos</button>
+        <button id="library-btn" type="button" class="tap shrink-0 text-xs font-medium py-1 px-3 rounded-full border border-papel-700 text-terracota-300 hover:bg-papel-800">📚 Mis cuentos</button>
       </div>
 
       <section id="profiles-section" aria-label="Perfiles de los peques">
         <div class="flex items-center justify-between mb-1.5">
           <span class="field-label mb-0">Peques de la casa <span class="text-lavanda-300">👑 VIP</span></span>
-          <button id="save-profile-btn" type="button" class="tap text-xs text-melocoton-400 hover:underline">+ Guardar perfil</button>
+          <button id="save-profile-btn" type="button" class="tap text-xs text-terracota-400 hover:underline">+ Guardar perfil</button>
         </div>
         <ul id="profiles-list" class="flex flex-wrap gap-2"></ul>
-        <p id="profiles-empty" class="text-xs text-noche-500">Guarda el nombre, la edad y el peluche de cada hermano para no escribirlos cada noche.</p>
+        <p id="profiles-empty" class="text-xs text-papel-500">Guarda el nombre, la edad y el peluche de cada hermano para no escribirlos cada noche.</p>
       </section>
 
       <div class="grid grid-cols-2 gap-2.5">
@@ -74,7 +74,7 @@
       <div>
         <div class="flex items-center justify-between mb-1.5">
           <span class="field-label mb-0">Tiempo de lectura</span>
-          <span class="text-xs text-melocoton-400 font-medium" id="time-hint"></span>
+          <span class="text-xs text-terracota-400 font-medium" id="time-hint"></span>
         </div>
         <div id="duration-options" class="grid grid-cols-4 gap-2 text-xs"></div>
       </div>
@@ -82,111 +82,111 @@
       <div>
         <div class="flex items-center justify-between mb-2">
           <span class="field-label mb-0">Estilo de ilustración</span>
-          <span class="text-xs text-melocoton-400 font-medium" id="style-hint"></span>
+          <span class="text-xs text-terracota-400 font-medium" id="style-hint"></span>
         </div>
         <div id="style-options" class="grid grid-cols-2 gap-2 text-xs"></div>
       </div>
 
-      <section id="voices-section" class="border border-noche-800 rounded-2xl p-3 space-y-2">
+      <section id="voices-section" class="border border-papel-800 rounded-2xl p-3 space-y-2">
         <div class="flex items-center justify-between">
           <span class="field-label mb-0">Voces de la familia <span class="text-lavanda-300">👑 Pro y VIP</span></span>
-          <button id="add-voice-btn" type="button" class="tap text-xs text-melocoton-400 hover:underline">+ Añadir voz</button>
+          <button id="add-voice-btn" type="button" class="tap text-xs text-terracota-400 hover:underline">+ Añadir voz</button>
         </div>
-        <p id="voices-empty" class="text-xs text-noche-500">Graba a papá, mamá, los abuelos o los tíos y que el cuento se lea con su voz.</p>
+        <p id="voices-empty" class="text-xs text-papel-500">Graba a papá, mamá, los abuelos o los tíos y que el cuento se lea con su voz.</p>
         <ul id="voices-list" class="flex flex-wrap gap-2"></ul>
       </section>
 
-      <button id="generate-btn" type="button" class="w-full bg-melocoton-500 hover:bg-melocoton-400 active:scale-[0.99] text-noche-950 font-bold py-3.5 rounded-2xl transition shadow-lg shadow-melocoton-500/20 flex items-center justify-center gap-2">
+      <button id="generate-btn" type="button" class="w-full bg-terracota-500 hover:bg-terracota-400 active:scale-[0.99] text-papel-950 font-bold py-3.5 rounded-2xl transition shadow-lg shadow-terracota-500/20 flex items-center justify-center gap-2">
         <span id="generate-label">✨ Generar cuento mágico</span>
       </button>
 
       <div id="loader" class="hidden text-center py-4 space-y-2" role="status">
-        <div class="inline-block animate-spin motion-reduce:animate-none rounded-full h-7 w-7 border-4 border-melocoton-400 border-t-transparent"></div>
-        <p class="text-xs text-melocoton-200/80">Tejiendo el cuento con su moraleja y dibujando la escena...</p>
+        <div class="inline-block animate-spin motion-reduce:animate-none rounded-full h-7 w-7 border-4 border-terracota-400 border-t-transparent"></div>
+        <p class="text-xs text-terracota-200/80">Tejiendo el cuento con su moraleja y dibujando la escena...</p>
       </div>
 
-      <div class="flex justify-center gap-4 pt-1 text-xs text-noche-500">
-        <button id="manage-btn" type="button" class="hidden hover:text-noche-300 underline">Gestionar suscripción</button>
-        <a href="/terminos.html" class="tap hover:text-noche-300 underline adult-link">Términos</a>
-        <a href="/privacidad.html" class="tap hover:text-noche-300 underline adult-link">Privacidad</a>
-        <a href="/aviso-legal.html" class="tap hover:text-noche-300 underline adult-link">Aviso legal</a>
+      <div class="flex justify-center gap-4 pt-1 text-xs text-papel-500">
+        <button id="manage-btn" type="button" class="hidden hover:text-papel-300 underline">Gestionar suscripción</button>
+        <a href="/terminos.html" class="tap hover:text-papel-300 underline adult-link">Términos</a>
+        <a href="/privacidad.html" class="tap hover:text-papel-300 underline adult-link">Privacidad</a>
+        <a href="/aviso-legal.html" class="tap hover:text-papel-300 underline adult-link">Aviso legal</a>
       </div>
     </main>
 
     <!-- BIBLIOTECA -->
-    <section id="library-view" class="hidden bg-noche-900 border border-noche-800 rounded-3xl p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-noche-800 pb-3">
-        <button id="close-library" type="button" class="tap text-xs text-melocoton-400 hover:underline">← Crear otro</button>
-        <h2 class="text-sm font-bold text-melocoton-200">📚 Mis cuentos</h2>
+    <section id="library-view" class="hidden bg-papel-900 border border-papel-800 rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-papel-800 pb-3">
+        <button id="close-library" type="button" class="tap text-xs text-terracota-400 hover:underline">← Crear otro</button>
+        <h2 class="text-sm font-bold text-terracota-200">📚 Mis cuentos</h2>
       </div>
-      <p id="library-note" class="text-xs text-noche-400"></p>
+      <p id="library-note" class="text-xs text-papel-400"></p>
       <ul id="library-list" class="space-y-2"></ul>
-      <p id="library-empty" class="hidden text-center text-xs text-noche-500 py-6">Aquí aparecerán los cuentos que crees. Volver a leerlos y escucharlos es gratis.</p>
+      <p id="library-empty" class="hidden text-center text-xs text-papel-500 py-6">Aquí aparecerán los cuentos que crees. Volver a leerlos y escucharlos es gratis.</p>
     </section>
 
     <!-- LECTURA -->
-    <article id="reader-view" class="hidden bg-noche-900 border border-noche-800 rounded-3xl p-6 shadow-2xl space-y-5 text-noche-200">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-noche-800 pb-3">
-        <button id="close-reader" type="button" class="tap text-xs text-melocoton-400 hover:underline whitespace-nowrap">← Crear otro</button>
+    <article id="reader-view" class="hidden bg-papel-900 border border-papel-800 rounded-3xl p-6 shadow-2xl space-y-5 text-papel-200">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-papel-800 pb-3">
+        <button id="close-reader" type="button" class="tap text-xs text-terracota-400 hover:underline whitespace-nowrap">← Crear otro</button>
         <div class="flex flex-wrap items-center justify-end gap-2">
-          <select id="voice-select" aria-label="Voz que narra" class="hidden bg-noche-800 border border-noche-700 text-melocoton-200 text-xs rounded-full px-2 py-1"></select>
-          <button id="btn-audio" type="button" class="px-3 py-1 bg-noche-800 hover:bg-noche-700 text-melocoton-300 rounded-full text-xs flex items-center gap-1 border border-noche-700">
+          <select id="voice-select" aria-label="Voz que narra" class="hidden bg-papel-800 border border-papel-700 text-terracota-200 text-xs rounded-full px-2 py-1"></select>
+          <button id="btn-audio" type="button" class="px-3 py-1 bg-papel-800 hover:bg-papel-700 text-terracota-300 rounded-full text-xs flex items-center gap-1 border border-papel-700">
             <span id="audio-icon">🔊</span> <span id="audio-label">Escuchar</span>
           </button>
-          <span id="reading-badge" class="whitespace-nowrap text-xs text-noche-400 bg-noche-950 px-2.5 py-0.5 rounded-full"></span>
+          <span id="reading-badge" class="whitespace-nowrap text-xs text-papel-400 bg-papel-950 px-2.5 py-0.5 rounded-full"></span>
         </div>
       </div>
       <div id="reader-actions" class="flex flex-wrap justify-center gap-2 text-xs">
-        <button id="btn-offline" type="button" class="px-3 py-1 rounded-full border border-noche-700 bg-noche-800 hover:bg-noche-700 text-noche-200">⬇ Guardar sin conexión</button>
-        <button id="btn-share" type="button" class="px-3 py-1 rounded-full border border-noche-700 bg-noche-800 hover:bg-noche-700 text-noche-200">💌 Enviar a los abuelos</button>
+        <button id="btn-offline" type="button" class="px-3 py-1 rounded-full border border-papel-700 bg-papel-800 hover:bg-papel-700 text-papel-200">⬇ Guardar sin conexión</button>
+        <button id="btn-share" type="button" class="px-3 py-1 rounded-full border border-papel-700 bg-papel-800 hover:bg-papel-700 text-papel-200">💌 Enviar a los abuelos</button>
       </div>
       <audio id="story-audio" preload="none" class="hidden"></audio>
-      <h2 id="story-title" class="text-xl font-bold text-melocoton-100 text-center leading-snug"></h2>
-      <div id="image-box" class="w-full aspect-[4/3] bg-noche-950 rounded-2xl overflow-hidden border border-noche-800 flex items-center justify-center">
+      <h2 id="story-title" class="text-xl font-bold text-terracota-100 text-center leading-snug"></h2>
+      <div id="image-box" class="w-full aspect-[4/3] bg-papel-950 rounded-2xl overflow-hidden border border-papel-800 flex items-center justify-center">
         <img id="story-image" alt="Ilustración del cuento" class="w-full h-full object-cover transition-opacity duration-300 opacity-0">
       </div>
-      <div id="story-content" class="text-[17px] font-serif leading-[1.75] text-noche-200 space-y-4"></div>
+      <div id="story-content" class="text-[17px] font-serif leading-[1.75] text-papel-200 space-y-4"></div>
     </article>
   </div>
 
   <!-- PAYWALL -->
-  <div id="paywall-modal" class="hidden fixed inset-0 z-40 bg-noche-950/95 backdrop-blur-md flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
-    <div class="my-auto w-full max-w-md bg-noche-900 border border-noche-800 rounded-3xl p-6 shadow-2xl relative text-noche-100 space-y-5">
-      <button id="close-paywall" type="button" aria-label="Cerrar" class="tap-icon absolute top-4 right-4 text-noche-500 hover:text-noche-300 text-lg p-2 rounded-full leading-none">✕</button>
+  <div id="paywall-modal" class="hidden fixed inset-0 z-40 bg-papel-950/95 backdrop-blur-md flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
+    <div class="my-auto w-full max-w-md bg-papel-900 border border-papel-800 rounded-3xl p-6 shadow-2xl relative text-papel-100 space-y-5">
+      <button id="close-paywall" type="button" aria-label="Cerrar" class="tap-icon absolute top-4 right-4 text-papel-500 hover:text-papel-300 text-lg p-2 rounded-full leading-none">✕</button>
 
       <header class="text-center space-y-1 pt-2">
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-melocoton-400/10 text-melocoton-400 text-2xl mb-1">✨</div>
-        <h2 id="paywall-title" class="text-2xl font-bold tracking-tight text-noche-50">Un cuento nuevo cada noche</h2>
-        <p id="paywall-reason" class="text-xs text-noche-400 px-4">Cuentos ilimitados, narrados con voz natural y con valores.</p>
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-terracota-400/10 text-terracota-400 text-2xl mb-1">✨</div>
+        <h2 id="paywall-title" class="text-2xl font-bold tracking-tight text-papel-50">Un cuento nuevo cada noche</h2>
+        <p id="paywall-reason" class="text-xs text-papel-400 px-4">Cuentos ilimitados, narrados con voz natural y con valores.</p>
       </header>
 
       <div class="flex justify-center">
-        <div class="bg-noche-950 p-1 rounded-2xl border border-noche-800 flex items-center gap-1">
+        <div class="bg-papel-950 p-1 rounded-2xl border border-papel-800 flex items-center gap-1">
           <button id="btn-period-annual" type="button" class="tap period-btn period-btn-active">
-            Anual <span class="ml-1 inline-block bg-noche-950 text-melocoton-400 text-xs px-1.5 rounded-full font-bold">-33%</span>
+            Anual <span class="ml-1 inline-block bg-papel-950 text-terracota-400 text-xs px-1.5 rounded-full font-bold">-33%</span>
           </button>
           <button id="btn-period-monthly" type="button" class="tap period-btn">Mensual</button>
         </div>
       </div>
 
       <div class="space-y-3 pt-1" role="radiogroup" aria-label="Elige tu plan">
-        <div id="card-standard" role="radio" tabindex="0" class="plan-card relative bg-noche-950/70 rounded-2xl p-3.5 cursor-pointer">
+        <div id="card-standard" role="radio" tabindex="0" class="plan-card relative bg-papel-950/70 rounded-2xl p-3.5 cursor-pointer">
           <div class="flex items-baseline justify-between gap-2">
-            <span class="text-sm font-bold text-noche-200">Estándar</span>
-            <span class="text-lg font-black text-noche-50" id="price-standard"></span>
+            <span class="text-sm font-bold text-papel-200">Estándar</span>
+            <span class="text-lg font-black text-papel-50" id="price-standard"></span>
           </div>
-          <p class="text-xs text-noche-400" id="subtext-standard"></p>
-          <p class="text-xs text-noche-300 mt-1.5">Cuentos ilimitados de 2 a 5 min · 4 estilos · Narrador 1 h al mes · Biblioteca de 30 días</p>
+          <p class="text-xs text-papel-400" id="subtext-standard"></p>
+          <p class="text-xs text-papel-300 mt-1.5">Cuentos ilimitados de 2 a 5 min · 4 estilos · Narrador 1 h al mes · Biblioteca de 30 días</p>
         </div>
 
         <div id="card-vip" role="radio" tabindex="0" class="plan-card relative bg-lavanda-500/10 rounded-2xl p-4 pt-5 cursor-pointer">
-          <div class="absolute -top-2.5 left-4 bg-lavanda-400 text-noche-950 text-xs font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap" id="vip-badge">El favorito de las familias</div>
+          <div class="absolute -top-2.5 left-4 bg-lavanda-400 text-papel-950 text-xs font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap" id="vip-badge">El favorito de las familias</div>
           <div class="flex items-baseline justify-between gap-2">
             <span class="text-base font-bold text-lavanda-200">VIP Familiar</span>
-            <span class="text-2xl font-black text-noche-50" id="price-vip"></span>
+            <span class="text-2xl font-black text-papel-50" id="price-vip"></span>
           </div>
           <p class="text-xs text-lavanda-200/80" id="subtext-vip"></p>
-          <ul class="text-xs space-y-1 text-noche-200 mt-2">
+          <ul class="text-xs space-y-1 text-papel-200 mt-2">
             <li>✓ Hasta 6 voces de la familia: papá, mamá, abuelos, tíos</li>
             <li>✓ 2 horas al mes con sus voces</li>
             <li>✓ Biblioteca para siempre y sin conexión, para el coche o el avión</li>
@@ -196,30 +196,30 @@
           </ul>
         </div>
 
-        <div id="card-pro" role="radio" tabindex="0" class="plan-card relative bg-noche-950/70 rounded-2xl p-3.5 cursor-pointer">
+        <div id="card-pro" role="radio" tabindex="0" class="plan-card relative bg-papel-950/70 rounded-2xl p-3.5 cursor-pointer">
           <div class="flex items-baseline justify-between gap-2">
-            <span class="text-sm font-bold text-noche-200">Pro</span>
-            <span class="text-lg font-black text-noche-50" id="price-pro"></span>
+            <span class="text-sm font-bold text-papel-200">Pro</span>
+            <span class="text-lg font-black text-papel-50" id="price-pro"></span>
           </div>
-          <p class="text-xs text-noche-400" id="subtext-pro"></p>
-          <p class="text-xs text-noche-300 mt-1.5">Cuentos de 10 min · 10 estilos · 1 voz de la familia, 20 min al mes · Biblioteca de 30 días</p>
+          <p class="text-xs text-papel-400" id="subtext-pro"></p>
+          <p class="text-xs text-papel-300 mt-1.5">Cuentos de 10 min · 10 estilos · 1 voz de la familia, 20 min al mes · Biblioteca de 30 días</p>
         </div>
       </div>
 
       <div class="space-y-2 pt-2">
-        <label class="flex items-start gap-2 text-xs text-noche-300">
-          <input id="desist-consent" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 accent-melocoton-500">
+        <label class="flex items-start gap-2 text-xs text-papel-300">
+          <input id="desist-consent" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 accent-terracota-500">
           <span>Quiero empezar a usar el servicio ya. Entiendo que, al generar mi primer cuento de pago, pierdo el derecho de desistimiento de 14 días.</span>
         </label>
-        <button id="btn-cta" type="button" disabled class="w-full bg-melocoton-500 hover:bg-melocoton-400 disabled:opacity-40 disabled:hover:bg-melocoton-500 text-noche-950 font-bold py-3.5 rounded-2xl transition shadow-lg shadow-melocoton-500/20 active:scale-[0.99] flex flex-col items-center justify-center">
+        <button id="btn-cta" type="button" disabled class="w-full bg-terracota-500 hover:bg-terracota-400 disabled:opacity-40 disabled:hover:bg-terracota-500 text-papel-950 font-bold py-3.5 rounded-2xl transition shadow-lg shadow-terracota-500/20 active:scale-[0.99] flex flex-col items-center justify-center">
           <span class="text-sm" id="cta-title">Suscribirme por 4,99 €/mes</span>
           <span class="text-xs font-medium opacity-90" id="cta-subtext"></span>
         </button>
-        <p id="checkout-error" class="hidden text-center text-xs text-rose-400"></p>
-        <p class="text-center text-xs text-noche-500">
+        <p id="checkout-error" class="hidden text-center text-xs text-rose-700"></p>
+        <p class="text-center text-xs text-papel-500">
           Precios con IVA incluido. La suscripción se renueva automáticamente cada mes o cada año al mismo precio hasta que la canceles. Puedes cancelar cuando quieras desde «Gestionar suscripción». Pago seguro con Stripe.
         </p>
-        <p class="text-center text-xs text-noche-500">
+        <p class="text-center text-xs text-papel-500">
           <a href="/terminos.html" class="underline adult-link">Términos y condiciones</a> · <a href="/privacidad.html" class="underline adult-link">Política de privacidad</a>
         </p>
       </div>
@@ -227,29 +227,29 @@
   </div>
 
   <!-- CONTROL PARENTAL -->
-  <div id="gate-modal" class="hidden fixed inset-0 z-50 bg-noche-950/95 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="gate-title">
-    <form id="gate-form" class="w-full max-w-xs bg-noche-900 border border-noche-800 rounded-3xl p-6 space-y-4 text-center">
-      <h2 id="gate-title" class="text-lg font-bold text-noche-50">Zona para adultos</h2>
-      <p class="text-xs text-noche-400">Pide ayuda a un adulto. Escribe el resultado en números: <strong id="gate-question" class="text-noche-200"></strong></p>
+  <div id="gate-modal" class="hidden fixed inset-0 z-50 bg-papel-950/95 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <form id="gate-form" class="w-full max-w-xs bg-papel-900 border border-papel-800 rounded-3xl p-6 space-y-4 text-center">
+      <h2 id="gate-title" class="text-lg font-bold text-papel-50">Zona para adultos</h2>
+      <p class="text-xs text-papel-400">Pide ayuda a un adulto. Escribe el resultado en números: <strong id="gate-question" class="text-papel-200"></strong></p>
       <input id="gate-answer" type="number" inputmode="numeric" required class="field text-center text-lg" aria-label="Respuesta">
-      <p id="gate-error" class="hidden text-xs text-rose-400">Respuesta incorrecta.</p>
+      <p id="gate-error" class="hidden text-xs text-rose-700">Respuesta incorrecta.</p>
       <div class="flex gap-2">
-        <button type="button" id="gate-cancel" class="flex-1 py-2 rounded-xl border border-noche-700 text-noche-300 text-sm">Cancelar</button>
-        <button type="submit" class="flex-1 py-2 rounded-xl bg-melocoton-500 text-noche-950 font-bold text-sm">Continuar</button>
+        <button type="button" id="gate-cancel" class="flex-1 py-2 rounded-xl border border-papel-700 text-papel-300 text-sm">Cancelar</button>
+        <button type="submit" class="flex-1 py-2 rounded-xl bg-terracota-500 text-papel-950 font-bold text-sm">Continuar</button>
       </div>
     </form>
   </div>
 
   <!-- GRABAR VOZ (consentimiento en dos pasos) -->
-  <div id="voice-modal" class="hidden fixed inset-0 z-40 bg-noche-950/95 flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="voice-title">
-    <div class="my-auto w-full max-w-md bg-noche-900 border border-noche-800 rounded-3xl p-6 space-y-4 relative">
-      <button id="close-voice" type="button" aria-label="Cerrar" class="tap-icon absolute top-4 right-4 text-noche-500 hover:text-noche-300 text-lg p-2 leading-none">✕</button>
-      <h2 id="voice-title" class="text-lg font-bold text-noche-50">Añadir una voz familiar</h2>
+  <div id="voice-modal" class="hidden fixed inset-0 z-40 bg-papel-950/95 flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="voice-title">
+    <div class="my-auto w-full max-w-md bg-papel-900 border border-papel-800 rounded-3xl p-6 space-y-4 relative">
+      <button id="close-voice" type="button" aria-label="Cerrar" class="tap-icon absolute top-4 right-4 text-papel-500 hover:text-papel-300 text-lg p-2 leading-none">✕</button>
+      <h2 id="voice-title" class="text-lg font-bold text-papel-50">Añadir una voz familiar</h2>
 
       <!-- Paso 1: información y consentimiento de quien graba -->
       <form id="voice-step1" class="space-y-4">
-        <p class="text-sm text-noche-300">Vas a grabar unos 20 segundos de la voz de un familiar para que lea los cuentos (1 en el plan Pro y hasta 6 en el VIP). Antes, la persona que va a grabar debe saber esto:</p>
-        <ul class="text-xs text-noche-400 space-y-1.5 list-disc pl-4">
+        <p class="text-sm text-papel-300">Vas a grabar unos 20 segundos de la voz de un familiar para que lea los cuentos (1 en el plan Pro y hasta 6 en el VIP). Antes, la persona que va a grabar debe saber esto:</p>
+        <ul class="text-xs text-papel-400 space-y-1.5 list-disc pl-4">
           <li>Su voz se usará solo para leer cuentos en Cuentos Mágicos, nunca para otra cosa ni para entrenar inteligencias artificiales.</li>
           <li>La grabación la procesa nuestro proveedor fal.ai, en Estados Unidos, por cuenta nuestra.</li>
           <li>Puede pedir que la borremos cuando quiera, desde la app o escribiendo a nuestro email de contacto.</li>
@@ -278,51 +278,51 @@
           <label for="voice-name" class="field-label">¿Cómo la llamamos en la app?</label>
           <input id="voice-name" type="text" maxlength="20" autocomplete="off" placeholder="Ej. Yaya, Tía Ana, Padrino" class="field">
         </div>
-        <label class="flex items-start gap-2 text-xs text-noche-300">
-          <input id="voice-consent" type="checkbox" required class="mt-0.5 h-5 w-5 shrink-0 accent-melocoton-500">
+        <label class="flex items-start gap-2 text-xs text-papel-300">
+          <input id="voice-consent" type="checkbox" required class="mt-0.5 h-5 w-5 shrink-0 accent-terracota-500">
           <span>Soy la persona que va a grabar su voz, soy mayor de edad y acepto que se use como se describe arriba. He leído la <a href="/privacidad.html" target="_blank" class="underline">Política de privacidad</a>.</span>
         </label>
-        <p id="voice-error1" class="hidden text-xs text-rose-400"></p>
-        <button type="submit" class="w-full bg-melocoton-500 text-noche-950 font-bold py-3 rounded-2xl">Continuar</button>
+        <p id="voice-error1" class="hidden text-xs text-rose-700"></p>
+        <button type="submit" class="w-full bg-terracota-500 text-papel-950 font-bold py-3 rounded-2xl">Continuar</button>
       </form>
 
       <!-- Paso 2: grabación (frase de consentimiento + texto de muestra) -->
       <div id="voice-step2" class="hidden space-y-4">
-        <div class="bg-noche-950 border border-noche-800 rounded-2xl p-3 text-sm text-noche-300 leading-relaxed space-y-2">
-          <p class="text-xs text-melocoton-300">Pulsa grabar y lee en voz alta, despacio y con tono de cuento:</p>
-          <p class="text-melocoton-100">«Me llamo <span id="consent-speaker"></span>. Acepto que Cuentos Mágicos use mi voz para leer cuentos a mi familia.»</p>
+        <div class="bg-papel-950 border border-papel-800 rounded-2xl p-3 text-sm text-papel-300 leading-relaxed space-y-2">
+          <p class="text-xs text-terracota-300">Pulsa grabar y lee en voz alta, despacio y con tono de cuento:</p>
+          <p class="text-terracota-100">«Me llamo <span id="consent-speaker"></span>. Acepto que Cuentos Mágicos use mi voz para leer cuentos a mi familia.»</p>
           <p>«Había una vez, en una casita al borde del bosque, una lucecita que se encendía cada noche. Cuando todos se ponían el pijama, la lucecita bajaba despacio, se sentaba en la almohada y contaba en voz bajita las estrellas, una, dos y tres, hasta que todos se quedaban dormidos.»</p>
         </div>
         <div class="flex items-center gap-3">
-          <button id="record-btn" type="button" class="flex-1 bg-rose-500 hover:bg-rose-400 text-noche-50 font-bold py-2.5 rounded-xl text-sm">● Grabar</button>
-          <span id="record-time" class="text-xs text-noche-400 w-12 text-right">0 s</span>
+          <button id="record-btn" type="button" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-sm">● Grabar</button>
+          <span id="record-time" class="text-xs text-papel-400 w-12 text-right">0 s</span>
         </div>
         <audio id="record-preview" controls class="hidden w-full"></audio>
-        <p id="voice-error" class="hidden text-xs text-rose-400"></p>
+        <p id="voice-error" class="hidden text-xs text-rose-700"></p>
         <div class="flex gap-2">
-          <button id="voice-back" type="button" class="flex-1 py-3 rounded-2xl border border-noche-700 text-noche-300 text-sm">Atrás</button>
-          <button id="save-voice" type="button" disabled class="flex-[2] bg-melocoton-500 disabled:opacity-40 text-noche-950 font-bold py-3 rounded-2xl">Guardar voz</button>
+          <button id="voice-back" type="button" class="flex-1 py-3 rounded-2xl border border-papel-700 text-papel-300 text-sm">Atrás</button>
+          <button id="save-voice" type="button" disabled class="flex-[2] bg-terracota-500 disabled:opacity-40 text-papel-950 font-bold py-3 rounded-2xl">Guardar voz</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ENLACE PARA LOS ABUELOS -->
-  <div id="share-modal" class="hidden fixed inset-0 z-40 bg-noche-950/95 flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="share-title">
-    <div class="my-auto w-full max-w-sm bg-noche-900 border border-noche-800 rounded-3xl p-6 space-y-4 relative">
-      <button id="close-share" type="button" aria-label="Cerrar" class="tap-icon absolute top-4 right-4 text-noche-500 hover:text-noche-300 text-lg p-2 leading-none">✕</button>
-      <h2 id="share-title" class="text-lg font-bold text-noche-50">💌 Para los abuelos</h2>
-      <p class="text-xs text-noche-400">Quien tenga este enlace podrá leer y escuchar este cuento desde su móvil, sin instalar nada. Incluye el nombre del peque. Puedes desactivarlo cuando quieras.</p>
+  <div id="share-modal" class="hidden fixed inset-0 z-40 bg-papel-950/95 flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <div class="my-auto w-full max-w-sm bg-papel-900 border border-papel-800 rounded-3xl p-6 space-y-4 relative">
+      <button id="close-share" type="button" aria-label="Cerrar" class="tap-icon absolute top-4 right-4 text-papel-500 hover:text-papel-300 text-lg p-2 leading-none">✕</button>
+      <h2 id="share-title" class="text-lg font-bold text-papel-50">💌 Para los abuelos</h2>
+      <p class="text-xs text-papel-400">Quien tenga este enlace podrá leer y escuchar este cuento desde su móvil, sin instalar nada. Incluye el nombre del peque. Puedes desactivarlo cuando quieras.</p>
       <input id="share-url" type="text" readonly class="field text-xs" aria-label="Enlace del cuento">
       <div class="flex gap-2">
-        <button id="share-copy" type="button" class="flex-1 py-2.5 rounded-xl border border-noche-700 text-noche-200 text-sm">Copiar</button>
-        <button id="share-send" type="button" class="flex-1 py-2.5 rounded-xl bg-melocoton-500 text-noche-950 font-bold text-sm">Enviar</button>
+        <button id="share-copy" type="button" class="flex-1 py-2.5 rounded-xl border border-papel-700 text-papel-200 text-sm">Copiar</button>
+        <button id="share-send" type="button" class="flex-1 py-2.5 rounded-xl bg-terracota-500 text-papel-950 font-bold text-sm">Enviar</button>
       </div>
-      <button id="share-revoke" type="button" class="tap w-full text-xs text-rose-300 hover:underline">Desactivar el enlace</button>
+      <button id="share-revoke" type="button" class="tap w-full text-xs text-rose-700 hover:underline">Desactivar el enlace</button>
     </div>
   </div>
 
-  <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-noche-800 text-noche-100 text-xs px-4 py-2 rounded-full shadow-lg" role="status"></div>
+  <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-papel-800 text-papel-100 text-xs px-4 py-2 rounded-full shadow-lg" role="status"></div>
 
   <script src="/app.js"></script>
 </body>

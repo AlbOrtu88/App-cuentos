@@ -18,14 +18,14 @@
   .tap { @apply inline-flex items-center justify-center min-h-[44px] px-2; }
   .tap-icon { @apply inline-flex items-center justify-center min-h-[44px] min-w-[44px]; }
   .tap-chip { @apply inline-flex items-center justify-center min-h-[32px] min-w-[32px]; }
-  .field-label { @apply block text-xs font-semibold text-noche-300 mb-1; }
-  .field { @apply min-h-[44px] w-full bg-noche-950 border border-noche-800 rounded-xl px-3 py-2 text-sm text-noche-100 placeholder-noche-600 focus:outline-none focus:border-melocoton-400 focus:ring-1 focus:ring-melocoton-400; }
-  .option-btn { @apply min-h-[44px] py-2 px-2.5 rounded-xl border border-noche-800 bg-noche-950 text-noche-300 transition hover:border-noche-600; }
-  .option-btn-active { @apply border-melocoton-400 bg-melocoton-400/10 text-melocoton-200 font-semibold; }
-  .option-btn-locked { @apply opacity-60 text-noche-500; }
-  .plan-card { @apply border-2 border-noche-800 transition; }
-  .plan-card-active { @apply border-melocoton-400; }
+  .field-label { @apply block text-xs font-semibold text-papel-300 mb-1; }
+  .field { @apply min-h-[44px] w-full bg-papel-950 border border-papel-800 rounded-xl px-3 py-2 text-sm text-papel-100 placeholder-papel-600 focus:outline-none focus:border-terracota-400 focus:ring-1 focus:ring-terracota-400; }
+  .option-btn { @apply min-h-[44px] py-2 px-2.5 rounded-xl border border-papel-800 bg-papel-950 text-papel-300 transition hover:border-papel-600; }
+  .option-btn-active { @apply border-terracota-400 bg-terracota-400/10 text-terracota-200 font-semibold; }
+  .option-btn-locked { @apply opacity-60 text-papel-500; }
+  .plan-card { @apply border-2 border-papel-800 transition; }
+  .plan-card-active { @apply border-terracota-400; }
   .plan-card-disabled { @apply opacity-70 cursor-not-allowed; }
-  .period-btn { @apply min-h-[40px] px-4 py-1.5 rounded-xl text-xs font-semibold text-noche-400 transition; }
-  .period-btn-active { @apply bg-melocoton-400 text-noche-950; }
+  .period-btn { @apply min-h-[40px] px-4 py-1.5 rounded-xl text-xs font-semibold text-papel-400 transition; }
+  .period-btn-active { @apply bg-terracota-400 text-papel-950; }
 }
