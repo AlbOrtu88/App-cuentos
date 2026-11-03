@@ -118,7 +118,7 @@ function renderQuota() {
   const badge = $('quota-badge');
   badge.className = 'text-center text-xs font-medium py-1 px-3 rounded-full border';
   if (state.plan !== 'free') {
-    badge.textContent = `Plan ${PLAN_NAMES[state.plan]} · cuentos ilimitados`;
+    badge.textContent = `Plan ${PLAN_NAMES[state.plan]} · hasta 5 cuentos al día`;
     badge.classList.add('bg-emerald-500/10', 'text-emerald-700', 'border-emerald-500/30');
   } else if (state.freeRemaining > 0) {
     badge.textContent = `Tienes ${state.freeRemaining} de 3 cuentos gratis`;
@@ -1072,7 +1072,7 @@ async function revokeShareLink() {
 // Siempre se abre con el VIP elegido: es el plan que queremos que compare primero.
 function openPaywall(reason) {
   state.selectedPlan = state.voicePlansEnabled ? 'vip' : 'standard';
-  $('paywall-reason').textContent = reason || 'Cuentos ilimitados, narrados con voz natural y con valores.';
+  $('paywall-reason').textContent = reason || 'Hasta 5 cuentos al día, narrados con voz natural y con valores.';
   $('checkout-error').classList.add('hidden');
   $('desist-consent').checked = false;
   $('btn-cta').disabled = true;
@@ -1181,7 +1181,7 @@ async function handleCheckoutReturn() {
   for (let i = 0; i < 6; i++) {
     await new Promise((r) => setTimeout(r, 2000));
     await loadMe();
-    if (state.plan !== 'free') return toast('¡Listo! Ya tienes cuentos ilimitados.');
+    if (state.plan !== 'free') return toast('¡Listo! Ya puedes crear hasta 5 cuentos al día.');
   }
   toast('El pago se ha recibido. Si no ves el plan activo, recarga en un minuto.');
 }

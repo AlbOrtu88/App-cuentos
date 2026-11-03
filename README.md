@@ -25,7 +25,7 @@ El plan y la cuota se guardan en el servidor (KV), no en el navegador.
 | | Gratis | Estándar | Pro | VIP Familiar |
 |-|-|-|-|-|
 | Precio | 0 € | 4,99 €/mes o 39,99 €/año | 12,99 €/mes o 99,99 €/año | 14,99 €/mes o 119,99 €/año |
-| Cuentos | 3 | Ilimitados (20 al día) | Ilimitados | Ilimitados |
+| Cuentos | 3 | Hasta 5 al día | Hasta 5 al día | Hasta 5 al día |
 | Duración | 2 y 3 min | + 5 min | + 10 min | + 10 min |
 | Estilos | 1 | 4 | 10 | 10 |
 | Narrador natural | Voz del móvil | 1 h al mes | 2 h 30 min al mes | 3 h 20 min al mes en total |
@@ -96,7 +96,7 @@ Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del nave
 | Variable | Por defecto | Qué controla |
 |-|-|-|
 | `FREE_DAILY_IP_LIMIT` | 10 | Cuentos gratis por IP y día |
-| `PAID_DAILY_LIMIT` | 20 | Cuentos por cuenta de pago y día |
+| `PAID_DAILY_LIMIT` | 5 | Cuentos por cuenta de pago y día |
 
 Los minutos de narrador y de voces de la familia de cada plan están en `PLAN_LIMITS` (`src/config.js`). Si alguien baja a un plan con menos voces, las que sobran se borran a los 30 días.
 

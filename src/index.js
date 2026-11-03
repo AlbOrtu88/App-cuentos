@@ -167,7 +167,7 @@ async function handleGenerate(request, env, url, session) {
   }
 
   const limited = await hitDailyLimit(request, env, uid, user.plan);
-  if (limited) return json({ error: 'Has llegado al límite de cuentos de hoy. Vuelve mañana.', code: 'daily' }, 429);
+  if (limited) return json({ error: 'Ya habéis creado los 5 cuentos de hoy. Mañana podréis crear más.', code: 'daily' }, 429);
 
   const input = {
     name: cleanField(body.childName, 'el pequeño'),
@@ -226,7 +226,7 @@ async function hitDailyLimit(request, env, uid, plan) {
   const day = new Date().toISOString().slice(0, 10);
   const ip = request.headers.get('CF-Connecting-IP') || 'local';
   const key = plan === 'free' ? `rl:ip:${ip}:${day}` : `rl:uid:${uid}:${day}`;
-  const max = parseInt(plan === 'free' ? env.FREE_DAILY_IP_LIMIT || '10' : env.PAID_DAILY_LIMIT || '20', 10);
+  const max = parseInt(plan === 'free' ? env.FREE_DAILY_IP_LIMIT || '10' : env.PAID_DAILY_LIMIT || '5', 10);
   const count = parseInt((await env.DATA.get(key)) || '0', 10);
   if (count >= max) return true;
   await env.DATA.put(key, String(count + 1), { expirationTtl: 60 * 60 * 26 });
