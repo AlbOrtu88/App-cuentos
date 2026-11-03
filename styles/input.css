@@ -3,10 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  /* El atributo hidden siempre gana a las clases de diseño */
+  [hidden] { display: none !important; }
   /* Títulos con la letra de libro ilustrado; sin negrita falsa porque Young Serif solo tiene un peso */
   h1, h2 { @apply font-display font-normal; text-wrap: balance; }
   /* Foco visible para teclado y lectores de pantalla */
   :focus-visible { outline: 2px solid theme('colors.melocoton.500'); outline-offset: 2px; border-radius: 0.5rem; }
+  /* Pasos: entran deslizándose un poco hacia el lado al que avanzas */
+  @keyframes step-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  @keyframes step-in-back { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+  @keyframes float-soft { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(2deg); } }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(0.96); } 100% { transform: scale(1); } }
   /* Sin animaciones si el móvil tiene «reducir movimiento» */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
@@ -14,6 +21,25 @@
 }
 
 @layer components {
+  /* Pasos para crear el cuento */
+  .step { @apply flex flex-col gap-4; }
+  .step-in { animation: step-in 0.32s cubic-bezier(.2,.7,.2,1) both; }
+  .step-in-back { animation: step-in-back 0.32s cubic-bezier(.2,.7,.2,1) both; }
+  .step-title { @apply font-display text-2xl leading-tight text-papel-50 outline-none; text-wrap: balance; }
+  .step-hint { @apply -mt-2 text-sm text-papel-400; }
+  .step-dot { @apply h-1.5 flex-1 rounded-full bg-papel-800 transition-colors duration-300; }
+  .step-dot-on { @apply bg-terracota-500; }
+  .field-big { @apply text-lg py-3 px-4 rounded-2xl; }
+  .stepper-btn { @apply inline-flex items-center justify-center h-12 w-12 rounded-full border-2 border-papel-800 bg-papel-950 text-2xl font-bold text-terracota-400 hover:border-terracota-400 active:scale-95 transition; }
+  /* Tarjetas con dibujo para elegir (moraleja, duración, estilo) */
+  .choice-card { @apply relative flex flex-col items-center overflow-hidden rounded-2xl border-2 border-papel-800 bg-papel-950 transition hover:border-papel-700; }
+  .choice-card:active { animation: pop 0.2s ease-out; }
+  .choice-card-active { @apply border-terracota-500 bg-terracota-500/10; box-shadow: 0 0 0 3px theme('colors.terracota.500 / 15%'); }
+  .choice-card-locked { @apply border-dashed; }
+  .choice-img { @apply w-full aspect-square object-cover; }
+  .col-span-2 .choice-img { @apply aspect-[2/1]; }
+  .loader-art { animation: float-soft 3.2s ease-in-out infinite; box-shadow: 0 0 0 6px theme('colors.papel.900'), 0 0 0 8px theme('colors.terracota.500 / 30%'); }
+
   /* Zonas táctiles cómodas para dedos cansados a oscuras (44 px) */
   .tap { @apply inline-flex items-center justify-center min-h-[44px] px-2; }
   .tap-icon { @apply inline-flex items-center justify-center min-h-[44px] min-w-[44px]; }

@@ -25,87 +25,108 @@
       </div>
     </header>
 
-    <!-- FORMULARIO -->
-    <main id="creator-view" class="bg-papel-900 border border-papel-800 rounded-3xl p-5 space-y-3.5">
+    <!-- CREAR EL CUENTO: un paso por pantalla -->
+    <main id="creator-view" class="space-y-3">
       <div class="flex items-center gap-2">
         <div id="quota-badge" class="hidden flex-1 text-center text-xs font-medium py-1 px-3 rounded-full border"></div>
-        <button id="library-btn" type="button" class="tap shrink-0 text-xs font-medium py-1 px-3 rounded-xl border border-papel-700 text-terracota-300 hover:bg-papel-800">Mis cuentos</button>
+        <button id="library-btn" type="button" class="tap shrink-0 ml-auto text-xs font-bold px-4 rounded-full border border-papel-700 bg-papel-900 text-terracota-300 hover:bg-papel-800">Mis cuentos</button>
       </div>
 
-      <section id="profiles-section" aria-label="Perfiles de los peques">
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="field-label mb-0">Peques de la casa <span class="plan-tag">VIP</span></span>
-          <button id="save-profile-btn" type="button" class="tap text-xs text-terracota-400 hover:underline">+ Guardar perfil</button>
-        </div>
-        <ul id="profiles-list" class="flex flex-wrap gap-2"></ul>
-        <p id="profiles-empty" class="text-xs text-papel-500">Guarda el nombre, la edad y el peluche de cada hermano para no escribirlos cada noche.</p>
-      </section>
+      <nav aria-label="Pasos" class="flex items-center gap-3">
+        <ol id="step-dots" class="flex flex-1 gap-1.5" aria-hidden="true"></ol>
+        <span id="step-count" class="text-xs font-bold text-papel-400 tabular-nums">Paso 1 de 6</span>
+      </nav>
 
-      <div class="grid grid-cols-2 gap-2.5">
-        <div>
-          <label for="child-name" class="field-label">Nombre niño/a</label>
-          <input type="text" id="child-name" maxlength="40" placeholder="Ej. Lucía" autocomplete="off" class="field">
-        </div>
-        <div>
-          <label for="child-age" class="field-label">Edad</label>
-          <input type="number" id="child-age" value="5" min="2" max="10" class="field">
-        </div>
-      </div>
+      <div id="steps" class="bg-papel-900 border border-papel-800 rounded-3xl p-5 min-h-[420px] flex flex-col">
 
-      <div class="grid grid-cols-2 gap-2.5">
-        <div>
-          <label for="companion-name" class="field-label">Acompañante</label>
-          <input type="text" id="companion-name" maxlength="40" placeholder="Ej. Papá / Hermano" autocomplete="off" class="field">
+        <section class="step" data-step="name" aria-labelledby="t-step-name">
+          <h2 id="t-step-name" class="step-title">¿Para quién es el cuento de esta noche?</h2>
+          <section id="profiles-section" aria-label="Perfiles de los peques" class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="field-label mb-0">Peques de la casa <span class="plan-tag">VIP</span></span>
+              <button id="save-profile-btn" type="button" class="tap text-xs text-terracota-400 hover:underline">+ Guardar perfil</button>
+            </div>
+            <ul id="profiles-list" class="flex flex-wrap gap-2"></ul>
+            <p id="profiles-empty" class="text-xs text-papel-500">Guarda el nombre, la edad y el peluche de cada hermano para no escribirlos cada noche.</p>
+          </section>
+          <div>
+            <label for="child-name" class="field-label">Su nombre</label>
+            <input type="text" id="child-name" maxlength="40" placeholder="Lucía" autocomplete="off" class="field field-big">
+          </div>
+          <div>
+            <span class="field-label" id="age-label">Su edad</span>
+            <div class="flex items-center gap-3" role="group" aria-labelledby="age-label">
+              <button type="button" id="age-down" class="stepper-btn" aria-label="Un año menos">−</button>
+              <input type="number" id="child-age" value="5" min="2" max="10" class="field field-big text-center w-24" aria-labelledby="age-label">
+              <button type="button" id="age-up" class="stepper-btn" aria-label="Un año más">+</button>
+              <span class="text-sm text-papel-400">años</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="step" data-step="friends" aria-labelledby="t-step-friends" hidden>
+          <h2 id="t-step-friends" class="step-title">¿Quién le acompaña en la aventura?</h2>
+          <p class="step-hint">Puedes dejarlo en blanco y seguir.</p>
+          <div>
+            <label for="companion-name" class="field-label">Una persona</label>
+            <input type="text" id="companion-name" maxlength="40" placeholder="Papá, la abuela, su hermano…" autocomplete="off" class="field field-big">
+          </div>
+          <div>
+            <label for="pet-toy" class="field-label">Un animal o juguete</label>
+            <input type="text" id="pet-toy" maxlength="40" placeholder="Su peluche Rex, el gato Miso…" autocomplete="off" class="field field-big">
+          </div>
+        </section>
+
+        <section class="step" data-step="lesson" aria-labelledby="t-step-lesson" hidden>
+          <h2 id="t-step-lesson" class="step-title">¿Qué te gustaría que aprenda hoy?</h2>
+          <select id="story-lesson" class="sr-only" tabindex="-1" aria-hidden="true">
+            <option value="dark">Perder el miedo a la oscuridad</option>
+            <option value="share">Compartir</option>
+            <option value="patience">Tener paciencia</option>
+            <option value="kindness">Hacer amigos</option>
+            <option value="gratitude">Dar las gracias</option>
+          </select>
+          <div id="lesson-options" class="grid grid-cols-2 gap-3"></div>
+        </section>
+
+        <section class="step" data-step="duration" aria-labelledby="t-step-duration" hidden>
+          <h2 id="t-step-duration" class="step-title">¿Cuánto tiempo tenéis?</h2>
+          <div id="duration-options" class="grid grid-cols-2 gap-3 text-base"></div>
+          <p class="step-hint" id="time-hint"></p>
+        </section>
+
+        <section class="step" data-step="style" aria-labelledby="t-step-style" hidden>
+          <div class="flex items-baseline justify-between gap-2">
+            <h2 id="t-step-style" class="step-title">¿Cómo lo dibujamos?</h2>
+            <span class="text-xs text-terracota-400 font-bold whitespace-nowrap" id="style-hint"></span>
+          </div>
+          <div id="style-options" class="grid grid-cols-2 gap-3 text-sm"></div>
+        </section>
+
+        <section class="step" data-step="voice" aria-labelledby="t-step-voice" hidden>
+          <h2 id="t-step-voice" class="step-title">Todo listo para el cuento</h2>
+          <dl id="story-summary" class="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm"></dl>
+          <section id="voices-section" class="rounded-2xl bg-papel-950 p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="field-label mb-0">Que lo lea alguien de la familia <span class="plan-tag">Pro y VIP</span></span>
+              <button id="add-voice-btn" type="button" class="tap text-xs text-terracota-400 hover:underline">+ Añadir voz</button>
+            </div>
+            <p id="voices-empty" class="text-xs text-papel-500">Graba a papá, mamá, los abuelos o los tíos y que el cuento se lea con su voz.</p>
+            <ul id="voices-list" class="flex flex-wrap gap-2"></ul>
+          </section>
+          <button id="generate-btn" type="button" class="w-full bg-terracota-500 hover:bg-terracota-400 active:scale-[0.98] text-papel-950 font-bold text-lg py-4 rounded-full transition flex items-center justify-center gap-2">
+            <span id="generate-label">Crear el cuento de esta noche</span>
+          </button>
+          <div id="loader" class="hidden text-center py-2 space-y-3" role="status">
+            <img src="/img/estilos/watercolor.webp" alt="" class="loader-art mx-auto w-28 h-28 rounded-full object-cover">
+            <p id="loader-text" class="text-sm text-terracota-200">Escribiendo el cuento…</p>
+          </div>
+        </section>
+
+        <div id="step-nav" class="mt-auto pt-5 flex items-center gap-3">
+          <button id="step-back" type="button" class="tap rounded-full px-5 text-sm font-bold text-papel-400 hover:text-papel-100" hidden>Atrás</button>
+          <button id="step-next" type="button" class="tap ml-auto rounded-full px-7 bg-papel-50 text-papel-950 text-sm font-bold hover:bg-papel-100 active:scale-[0.98] transition">Siguiente</button>
         </div>
-        <div>
-          <label for="pet-toy" class="field-label">Animal o juguete</label>
-          <input type="text" id="pet-toy" maxlength="40" placeholder="Ej. Peluche Rex / Gatito" autocomplete="off" class="field">
-        </div>
-      </div>
-
-      <div>
-        <label for="story-lesson" class="field-label">Moraleja o valor</label>
-        <select id="story-lesson" class="field text-xs">
-          <option value="dark">Perder el miedo a la oscuridad</option>
-          <option value="share">Aprender a compartir y generosidad</option>
-          <option value="patience">La paciencia y saber esperar</option>
-          <option value="kindness">Amabilidad y hacer nuevos amigos</option>
-          <option value="gratitude">Gratitud y valorar el día</option>
-        </select>
-      </div>
-
-      <div>
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="field-label mb-0">Tiempo de lectura</span>
-          <span class="text-xs text-terracota-400 font-medium" id="time-hint"></span>
-        </div>
-        <div id="duration-options" class="grid grid-cols-4 gap-2 text-xs"></div>
-      </div>
-
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <span class="field-label mb-0">Estilo de ilustración</span>
-          <span class="text-xs text-terracota-400 font-medium" id="style-hint"></span>
-        </div>
-        <div id="style-options" class="grid grid-cols-2 gap-2 text-xs"></div>
-      </div>
-
-      <section id="voices-section" class="border border-papel-800 rounded-2xl p-3 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="field-label mb-0">Voces de la familia <span class="plan-tag">Pro y VIP</span></span>
-          <button id="add-voice-btn" type="button" class="tap text-xs text-terracota-400 hover:underline">+ Añadir voz</button>
-        </div>
-        <p id="voices-empty" class="text-xs text-papel-500">Graba a papá, mamá, los abuelos o los tíos y que el cuento se lea con su voz.</p>
-        <ul id="voices-list" class="flex flex-wrap gap-2"></ul>
-      </section>
-
-      <button id="generate-btn" type="button" class="w-full bg-terracota-500 hover:bg-terracota-400 active:scale-[0.99] text-papel-950 font-bold py-3.5 rounded-full transition flex items-center justify-center gap-2">
-        <span id="generate-label">Crear el cuento de esta noche</span>
-      </button>
-
-      <div id="loader" class="hidden text-center py-4 space-y-2" role="status">
-        <div class="inline-block animate-spin motion-reduce:animate-none rounded-full h-7 w-7 border-4 border-terracota-400 border-t-transparent"></div>
-        <p class="text-xs text-terracota-200/80">Tejiendo el cuento con su moraleja y dibujando la escena...</p>
       </div>
 
       <div class="flex justify-center gap-4 pt-1 text-xs text-papel-500">
@@ -175,9 +196,9 @@
         <div id="card-standard" role="radio" tabindex="0" class="plan-card relative bg-papel-950/70 rounded-2xl p-3.5 cursor-pointer">
           <div class="flex items-baseline justify-between gap-2">
             <span class="text-sm font-bold text-papel-200">Estándar</span>
-            <span class="text-lg font-black text-papel-50" id="price-standard"></span>
+            <span class="text-lg font-black text-papel-50" id="price-standard">3,33 €<span class="text-xs font-normal text-papel-400">/mes</span></span>
           </div>
-          <p class="text-xs text-papel-400" id="subtext-standard"></p>
+          <p class="text-xs text-papel-400" id="subtext-standard">Se factura 39,99 € al año</p>
           <p class="text-xs text-papel-300 mt-1.5">Cuentos ilimitados de 2 a 5 min · 4 estilos · Narrador 1 h al mes · Biblioteca de 30 días</p>
         </div>
 
@@ -185,9 +206,9 @@
           <div class="absolute -top-2.5 left-4 bg-lavanda-400 text-papel-950 text-xs font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap" id="vip-badge">El favorito de las familias</div>
           <div class="flex items-baseline justify-between gap-2">
             <span class="text-base font-bold text-lavanda-200">VIP Familiar</span>
-            <span class="text-2xl font-black text-papel-50" id="price-vip"></span>
+            <span class="text-2xl font-black text-papel-50" id="price-vip">10,00 €<span class="text-xs font-normal text-papel-400">/mes</span></span>
           </div>
-          <p class="text-xs text-lavanda-200/80" id="subtext-vip"></p>
+          <p class="text-xs text-lavanda-200/80" id="subtext-vip">Se factura 119,99 € al año</p>
           <ul class="text-xs space-y-1 text-papel-200 mt-2">
             <li>✓ Hasta 6 voces de la familia: papá, mamá, abuelos, tíos</li>
             <li>✓ 2 horas al mes con sus voces</li>
@@ -201,9 +222,9 @@
         <div id="card-pro" role="radio" tabindex="0" class="plan-card relative bg-papel-950/70 rounded-2xl p-3.5 cursor-pointer">
           <div class="flex items-baseline justify-between gap-2">
             <span class="text-sm font-bold text-papel-200">Pro</span>
-            <span class="text-lg font-black text-papel-50" id="price-pro"></span>
+            <span class="text-lg font-black text-papel-50" id="price-pro">8,33 €<span class="text-xs font-normal text-papel-400">/mes</span></span>
           </div>
-          <p class="text-xs text-papel-400" id="subtext-pro"></p>
+          <p class="text-xs text-papel-400" id="subtext-pro">Se factura 99,99 € al año</p>
           <p class="text-xs text-papel-300 mt-1.5">Cuentos de 10 min · 10 estilos · 1 voz de la familia, 20 min al mes · Biblioteca de 30 días</p>
         </div>
       </div>

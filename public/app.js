@@ -24,6 +24,14 @@ const STYLES = [
   { id: 'felt', plan: 'pro', label: 'Fieltro y lana' },
   { id: 'pencil', plan: 'pro', label: 'Lápiz de color' },
 ];
+const DURATION_NOTES = { 2: 'Para cuando ya bostezan', 3: 'El de cada noche', 5: 'Con calma y mimos', 10: 'Para una noche especial' };
+const LESSON_CARDS = [
+  { id: 'dark', label: 'Perder el miedo a la oscuridad' },
+  { id: 'share', label: 'Compartir' },
+  { id: 'patience', label: 'Tener paciencia' },
+  { id: 'kindness', label: 'Hacer amigos' },
+  { id: 'gratitude', label: 'Dar las gracias por el día' },
+];
 const PER_MONTH = '<span class="text-xs font-normal text-papel-400">/mes</span>';
 const PRICES = {
   annual: {
@@ -100,7 +108,9 @@ function render() {
   renderProfiles();
   renderDurations();
   renderStyles();
+  renderLessons();
   renderVoices();
+  renderSummary();
   $('manage-btn').classList.toggle('hidden', !state.hasBilling);
 }
 
@@ -135,18 +145,25 @@ function renderDurations() {
     const selected = state.duration === d.min;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `option-btn ${selected ? 'option-btn-active' : ''} ${locked ? 'option-btn-locked' : ''}`;
-    btn.textContent = `${d.min} min`;
+    btn.className = `choice-card p-4 items-start text-left ${selected ? 'choice-card-active' : ''} ${locked ? 'choice-card-locked' : ''}`;
+    const big = document.createElement('span');
+    big.className = 'font-display text-2xl text-papel-50';
+    big.textContent = `${d.min} min`;
+    const note = document.createElement('span');
+    note.className = 'text-xs text-papel-400';
+    note.textContent = DURATION_NOTES[d.min] || '';
+    btn.append(big, note);
     if (locked) btn.appendChild(lockTag(d.plan));
     btn.setAttribute('aria-pressed', String(selected));
     btn.addEventListener('click', () => {
       if (locked) return openPaywall(d.plan === 'standard' ? 'Los cuentos de 5 minutos están desde el plan Estándar.' : 'Los cuentos de 10 minutos están en los planes Pro y VIP.');
       state.duration = d.min;
       renderDurations();
+      renderSummary();
     });
     box.appendChild(btn);
   }
-  $('time-hint').textContent = `≈ ${state.duration * WPM} palabras`;
+  $('time-hint').textContent = `Unas ${state.duration * WPM} palabras, leídas con calma.`;
 }
 
 function renderStyles() {
@@ -157,14 +174,26 @@ function renderStyles() {
     const selected = state.styleId === s.id;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `option-btn justify-between text-left ${selected ? 'option-btn-active' : ''} ${locked ? 'option-btn-locked' : ''}`;
-    btn.textContent = s.label;
-    if (locked) btn.appendChild(lockTag(s.plan));
+    btn.className = `choice-card ${selected ? 'choice-card-active' : ''} ${locked ? 'choice-card-locked' : ''}`;
+    const img = document.createElement('img');
+    img.src = `/img/estilos/${s.id}.webp`;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.className = 'choice-img';
+    const row = document.createElement('span');
+    row.className = 'flex items-center justify-between gap-1 px-3 py-2 w-full';
+    const name = document.createElement('span');
+    name.className = 'font-bold text-papel-100 leading-tight';
+    name.textContent = s.label;
+    row.appendChild(name);
+    if (locked) row.appendChild(lockTag(s.plan));
+    btn.append(img, row);
     btn.setAttribute('aria-pressed', String(selected));
     btn.addEventListener('click', () => {
       if (locked) return openPaywall(s.plan === 'standard' ? 'Este estilo está desde el plan Estándar.' : 'Este estilo está en los planes Pro y VIP.');
       state.styleId = s.id;
       renderStyles();
+      renderSummary();
     });
     box.appendChild(btn);
   }
@@ -181,11 +210,126 @@ function toast(message) {
   toastTimer = setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
+let loaderTimer;
+const LOADER_LINES = ['Escribiendo el cuento…', 'Buscando las palabras más bonitas…', 'Pintando la ilustración…', 'Casi listo, ve acomodando la almohada…'];
+
 function setBusy(busy) {
   state.busy = busy;
-  $('generate-btn').disabled = busy;
-  $('generate-btn').classList.toggle('opacity-50', busy);
+  $('generate-btn').classList.toggle('hidden', busy);
+  $('step-nav').classList.toggle('invisible', busy);
   $('loader').classList.toggle('hidden', !busy);
+  clearInterval(loaderTimer);
+  if (busy) {
+    let i = 0;
+    $('loader-text').textContent = LOADER_LINES[0];
+    loaderTimer = setInterval(() => {
+      i = Math.min(i + 1, LOADER_LINES.length - 1);
+      $('loader-text').textContent = LOADER_LINES[i];
+    }, 4000);
+  }
+}
+
+// ---------- Pasos para crear el cuento ----------
+// Una pantalla por decisión. Los campos son los mismos de siempre; solo cambia cuál se ve.
+
+const wizard = { index: 0 };
+const wizardSteps = () => [...document.querySelectorAll('#steps .step')];
+
+function renderLessons() {
+  const box = $('lesson-options');
+  const current = $('story-lesson').value;
+  box.innerHTML = '';
+  for (const l of LESSON_CARDS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `choice-card ${current === l.id ? 'choice-card-active' : ''}`;
+    btn.setAttribute('aria-pressed', String(current === l.id));
+    const img = document.createElement('img');
+    img.src = `/img/moralejas/${l.id}.webp`;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.className = 'choice-img';
+    const name = document.createElement('span');
+    name.className = 'px-3 py-2 font-bold text-sm text-papel-100 leading-tight text-left w-full';
+    name.textContent = l.label;
+    btn.append(img, name);
+    btn.addEventListener('click', () => {
+      $('story-lesson').value = l.id;
+      renderLessons();
+      renderSummary();
+      setTimeout(() => goToStep(wizard.index + 1), 220);
+    });
+    if (l.id === 'gratitude') btn.classList.add('col-span-2');
+    box.appendChild(btn);
+  }
+}
+
+function renderSummary() {
+  const dl = $('story-summary');
+  if (!dl) return;
+  const lesson = LESSON_CARDS.find((l) => l.id === $('story-lesson').value);
+  const style = STYLES.find((s) => s.id === state.styleId);
+  const friends = [$('companion-name').value.trim(), $('pet-toy').value.trim()].filter(Boolean).join(' y ');
+  const rows = [
+    ['Para', `${$('child-name').value.trim() || 'Leo'}, ${$('child-age').value} años`],
+    ['Con', friends || 'Sin acompañantes'],
+    ['Aprende', lesson?.label || ''],
+    ['Dura', `${state.duration} minutos`],
+    ['Dibujo', style?.label || ''],
+  ];
+  dl.innerHTML = '';
+  rows.forEach(([k, v], i) => {
+    const dt = document.createElement('dt');
+    dt.className = 'text-papel-400';
+    dt.textContent = k;
+    const dd = document.createElement('dd');
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'text-left font-bold text-papel-100 underline decoration-papel-700 underline-offset-4 hover:decoration-terracota-400';
+    edit.textContent = v;
+    edit.addEventListener('click', () => goToStep(i === 4 ? 4 : i === 3 ? 3 : i === 2 ? 2 : i === 1 ? 1 : 0));
+    dd.appendChild(edit);
+    dl.append(dt, dd);
+  });
+}
+
+function goToStep(index) {
+  const steps = wizardSteps();
+  const next = Math.max(0, Math.min(index, steps.length - 1));
+  if (next > wizard.index && wizard.index === 0 && !$('child-name').value.trim()) {
+    $('child-name').focus();
+    return toast('Escribe su nombre para que el cuento sea suyo.');
+  }
+  const back = next < wizard.index;
+  wizard.index = next;
+  steps.forEach((el, i) => {
+    el.hidden = i !== next;
+    el.classList.remove('step-in', 'step-in-back');
+  });
+  const el = steps[next];
+  void el.offsetWidth;
+  el.classList.add(back ? 'step-in-back' : 'step-in');
+  $('step-back').hidden = next === 0;
+  $('step-next').hidden = next === steps.length - 1;
+  $('step-count').textContent = `Paso ${next + 1} de ${steps.length}`;
+  [...$('step-dots').children].forEach((d, i) => d.classList.toggle('step-dot-on', i <= next));
+  if (next === steps.length - 1) renderSummary();
+  el.querySelector('.step-title')?.focus({ preventScroll: true });
+  document.getElementById('steps').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function initWizard() {
+  const steps = wizardSteps();
+  $('step-dots').innerHTML = steps.map(() => '<li class="step-dot"></li>').join('');
+  steps.forEach((el) => el.querySelector('.step-title')?.setAttribute('tabindex', '-1'));
+  $('step-next').addEventListener('click', () => goToStep(wizard.index + 1));
+  $('step-back').addEventListener('click', () => goToStep(wizard.index - 1));
+  $('child-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') goToStep(1); });
+  const age = $('child-age');
+  const bump = (d) => { age.value = Math.max(2, Math.min(10, (parseInt(age.value, 10) || 5) + d)); };
+  $('age-down').addEventListener('click', () => bump(-1));
+  $('age-up').addEventListener('click', () => bump(1));
+  goToStep(0);
 }
 
 // ---------- Generar ----------
@@ -1157,6 +1301,7 @@ function bind() {
 state.profiles = readStore(PROFILES_KEY, []);
 bind();
 render();
+initWizard();
 loadMe().then(handleCheckoutReturn);
 
 if ('serviceWorker' in navigator) {
