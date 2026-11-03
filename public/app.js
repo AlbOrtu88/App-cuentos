@@ -24,7 +24,7 @@ const STYLES = [
   { id: 'felt', plan: 'pro', label: 'Fieltro y lana' },
   { id: 'pencil', plan: 'pro', label: 'Lápiz de color' },
 ];
-const PER_MONTH = '<span class="text-xs font-normal text-slate-400">/mes</span>';
+const PER_MONTH = '<span class="text-xs font-normal text-noche-400">/mes</span>';
 const PRICES = {
   annual: {
     standard: { price: `3,33 €${PER_MONTH}`, sub: 'Se factura 39,99 € al año', cta: '39,99 €/año' },
@@ -112,7 +112,7 @@ function renderQuota() {
     badge.classList.add('bg-emerald-500/10', 'text-emerald-300', 'border-emerald-500/30');
   } else if (state.freeRemaining > 0) {
     badge.textContent = `Tienes ${state.freeRemaining} de 3 cuentos gratis`;
-    badge.classList.add('bg-amber-500/10', 'text-amber-300', 'border-amber-500/30');
+    badge.classList.add('bg-melocoton-500/10', 'text-melocoton-300', 'border-melocoton-500/30');
   } else {
     badge.textContent = 'Has usado tus 3 cuentos gratis';
     badge.classList.add('bg-rose-500/10', 'text-rose-300', 'border-rose-500/30');
@@ -380,7 +380,7 @@ function startSpeech() {
 
 function highlight(index) {
   document.querySelectorAll('#story-content p').forEach((p) => {
-    p.classList.toggle('bg-amber-400/10', Number(p.dataset.index) === index);
+    p.classList.toggle('bg-melocoton-400/10', Number(p.dataset.index) === index);
   });
 }
 
@@ -401,12 +401,12 @@ function renderVoices() {
   list.innerHTML = '';
   for (const v of state.voices) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-1 bg-purple-500/10 border border-purple-500/30 text-purple-200 text-xs rounded-full pl-3 pr-1 py-0.5';
+    li.className = 'flex items-center gap-1 bg-lavanda-500/10 border border-lavanda-500/30 text-lavanda-200 text-xs rounded-full pl-3 pr-1 py-0.5';
     const name = document.createElement('span');
     name.textContent = v.name;
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'px-1.5 text-purple-300 hover:text-rose-300';
+    del.className = 'px-1.5 text-lavanda-300 hover:text-rose-300';
     del.setAttribute('aria-label', `Borrar la voz de ${v.name}`);
     del.textContent = '✕';
     del.addEventListener('click', () => askAdult(() => deleteVoice(v)));
@@ -651,15 +651,15 @@ function renderProfiles() {
   const vip = allows('vip');
   for (const p of state.profiles) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs rounded-full pl-1 pr-1 py-0.5';
+    li.className = 'flex items-center gap-1 bg-melocoton-500/10 border border-melocoton-500/30 text-melocoton-200 text-xs rounded-full pl-1 pr-1 py-0.5';
     const pick = document.createElement('button');
     pick.type = 'button';
-    pick.className = 'px-2 py-0.5 hover:text-white';
+    pick.className = 'px-2 py-0.5 hover:text-noche-50';
     pick.textContent = `${p.name} · ${p.age}`;
     pick.addEventListener('click', () => applyProfile(p));
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'px-1.5 text-amber-300/70 hover:text-rose-300';
+    del.className = 'px-1.5 text-melocoton-300/70 hover:text-rose-300';
     del.setAttribute('aria-label', `Borrar el perfil de ${p.name}`);
     del.textContent = '✕';
     del.addEventListener('click', () => deleteProfile(p));
@@ -739,7 +739,7 @@ function renderLibrary(forever, offline, isOffline) {
     note.append('Se guardan los cuentos de los últimos 30 días. ');
     const more = document.createElement('button');
     more.type = 'button';
-    more.className = 'text-purple-300 underline';
+    more.className = 'text-lavanda-300 underline';
     more.textContent = 'Con el VIP, para siempre y sin conexión.';
     more.addEventListener('click', () => openPaywall('Guarda todos los cuentos para siempre y escúchalos sin conexión con el VIP.'));
     note.appendChild(more);
@@ -749,12 +749,12 @@ function renderLibrary(forever, offline, isOffline) {
   list.innerHTML = '';
   for (const s of state.library) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-3 bg-slate-950/60 border border-slate-800 rounded-2xl p-2';
+    li.className = 'flex items-center gap-3 bg-noche-950/60 border border-noche-800 rounded-2xl p-2';
     const open = document.createElement('button');
     open.type = 'button';
     open.className = 'flex flex-1 items-center gap-3 text-left min-w-0';
     const thumb = document.createElement(s.imageUrl ? 'img' : 'div');
-    thumb.className = 'w-14 h-14 rounded-xl object-cover bg-slate-800 shrink-0 flex items-center justify-center text-xl';
+    thumb.className = 'w-14 h-14 rounded-xl object-cover bg-noche-800 shrink-0 flex items-center justify-center text-xl';
     if (s.imageUrl) {
       thumb.src = s.imageUrl;
       thumb.alt = '';
@@ -765,10 +765,10 @@ function renderLibrary(forever, offline, isOffline) {
     const text = document.createElement('div');
     text.className = 'min-w-0';
     const title = document.createElement('p');
-    title.className = 'text-sm font-semibold text-amber-100 truncate';
+    title.className = 'text-sm font-semibold text-melocoton-100 truncate';
     title.textContent = s.titulo;
     const meta = document.createElement('p');
-    meta.className = 'text-[11px] text-slate-400';
+    meta.className = 'text-[11px] text-noche-400';
     const date = new Date(s.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     meta.textContent = [s.child, `${s.minutes} min`, date, offline[s.id] ? '⬇ sin conexión' : ''].filter(Boolean).join(' · ');
     text.append(title, meta);
@@ -778,7 +778,7 @@ function renderLibrary(forever, offline, isOffline) {
     if (!isOffline) {
       const del = document.createElement('button');
       del.type = 'button';
-      del.className = 'px-2 text-slate-500 hover:text-rose-300';
+      del.className = 'px-2 text-noche-500 hover:text-rose-300';
       del.setAttribute('aria-label', `Borrar ${s.titulo}`);
       del.textContent = '✕';
       del.addEventListener('click', () => askAdult(() => deleteSavedStory(s)));
