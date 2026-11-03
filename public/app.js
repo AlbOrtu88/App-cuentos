@@ -2,40 +2,42 @@
 'use strict';
 
 const WPM = 125;
-const PLAN_RANK = { free: 0, standard: 1, vip: 2 };
+const PLAN_RANK = { free: 0, standard: 1, pro: 2, vip: 3 };
+const PLANS = ['standard', 'vip', 'pro'];
 
 // Deben coincidir con src/config.js (el servidor es quien manda; esto solo pinta la interfaz).
 const DURATIONS = [
   { min: 2, plan: 'free' },
   { min: 3, plan: 'free' },
   { min: 5, plan: 'standard' },
-  { min: 10, plan: 'vip' },
+  { min: 10, plan: 'pro' },
 ];
 const STYLES = [
   { id: 'watercolor', plan: 'free', label: 'Acuarela suave' },
   { id: 'pixar', plan: 'standard', label: '3D Pixar' },
   { id: 'vintage', plan: 'standard', label: 'Cuento clásico' },
   { id: 'coloring', plan: 'standard', label: 'Lámina para colorear' },
-  { id: 'ghibli', plan: 'vip', label: 'Anime Ghibli' },
-  { id: 'clay', plan: 'vip', label: 'Plastilina 3D' },
-  { id: 'papercut', plan: 'vip', label: 'Papel en capas' },
-  { id: 'comic', plan: 'vip', label: 'Cómic ilustrado' },
-  { id: 'felt', plan: 'vip', label: 'Fieltro y lana' },
-  { id: 'pencil', plan: 'vip', label: 'Lápiz de color' },
+  { id: 'ghibli', plan: 'pro', label: 'Anime Ghibli' },
+  { id: 'clay', plan: 'pro', label: 'Plastilina 3D' },
+  { id: 'papercut', plan: 'pro', label: 'Papel en capas' },
+  { id: 'comic', plan: 'pro', label: 'Cómic ilustrado' },
+  { id: 'felt', plan: 'pro', label: 'Fieltro y lana' },
+  { id: 'pencil', plan: 'pro', label: 'Lápiz de color' },
 ];
+const PER_MONTH = '<span class="text-xs font-normal text-slate-400">/mes</span>';
 const PRICES = {
   annual: {
-    std: { price: '3,33 €<span class="text-xs font-normal text-slate-400">/mes</span>', sub: 'Se factura 39,99 € al año' },
-    vip: { price: '10,00 €<span class="text-xs font-normal text-slate-400">/mes</span>', sub: 'Se factura 119,99 € al año' },
-    cta: { standard: '39,99 €/año', vip: '119,99 €/año' },
+    standard: { price: `3,33 €${PER_MONTH}`, sub: 'Se factura 39,99 € al año', cta: '39,99 €/año' },
+    pro: { price: `8,33 €${PER_MONTH}`, sub: 'Se factura 99,99 € al año', cta: '99,99 €/año' },
+    vip: { price: `10,00 €${PER_MONTH}`, sub: 'Se factura 119,99 € al año', cta: '119,99 €/año' },
   },
   monthly: {
-    std: { price: '4,99 €<span class="text-xs font-normal text-slate-400">/mes</span>', sub: 'Se factura cada mes' },
-    vip: { price: '14,99 €<span class="text-xs font-normal text-slate-400">/mes</span>', sub: 'Se factura cada mes' },
-    cta: { standard: '4,99 €/mes', vip: '14,99 €/mes' },
+    standard: { price: `4,99 €${PER_MONTH}`, sub: 'Se factura cada mes', cta: '4,99 €/mes' },
+    pro: { price: `12,99 €${PER_MONTH}`, sub: 'Se factura cada mes', cta: '12,99 €/mes' },
+    vip: { price: `14,99 €${PER_MONTH}`, sub: 'Se factura cada mes', cta: '14,99 €/mes' },
   },
 };
-const PLAN_NAMES = { standard: 'Estándar', vip: 'VIP' };
+const PLAN_NAMES = { standard: 'Estándar', pro: 'Pro', vip: 'VIP' };
 
 const state = {
   plan: 'free',
@@ -44,8 +46,8 @@ const state = {
   duration: 3,
   styleId: 'watercolor',
   billing: 'annual',
-  selectedPlan: 'standard',
-  vipEnabled: false,
+  selectedPlan: 'vip',
+  voicePlansEnabled: false,
   voices: [],
   maxVoices: 6,
   voiceId: '',
@@ -80,7 +82,7 @@ async function loadMe() {
   state.freeRemaining = data.freeRemaining;
   state.hasBilling = Boolean(data.hasBilling);
   state.hadTrial = Boolean(data.hadTrial);
-  state.vipEnabled = Boolean(data.vipEnabled);
+  state.voicePlansEnabled = Boolean(data.voicePlansEnabled);
   state.voices = data.voices || [];
   state.maxVoices = data.maxVoices || 6;
   render();
@@ -114,7 +116,7 @@ function renderQuota() {
 }
 
 function lockLabel(plan) {
-  return plan === 'vip' ? '👑' : '⭐';
+  return plan === 'standard' ? '⭐' : '👑';
 }
 
 function renderDurations() {
@@ -129,7 +131,7 @@ function renderDurations() {
     btn.textContent = `${locked ? lockLabel(d.plan) + ' ' : ''}${d.min} min`;
     btn.setAttribute('aria-pressed', String(selected));
     btn.addEventListener('click', () => {
-      if (locked) return openPaywall(d.plan === 'vip' ? 'Los cuentos de 10 minutos están en el plan VIP.' : 'Los cuentos de 5 minutos están en el plan Estándar.', d.plan);
+      if (locked) return openPaywall(d.plan === 'standard' ? 'Los cuentos de 5 minutos están desde el plan Estándar.' : 'Los cuentos de 10 minutos están en los planes Pro y VIP.');
       state.duration = d.min;
       renderDurations();
     });
@@ -150,7 +152,7 @@ function renderStyles() {
     btn.textContent = `${locked ? lockLabel(s.plan) + ' ' : ''}${s.label}`;
     btn.setAttribute('aria-pressed', String(selected));
     btn.addEventListener('click', () => {
-      if (locked) return openPaywall(s.plan === 'vip' ? 'Este estilo está en el plan VIP.' : 'Este estilo está en el plan Estándar.', s.plan);
+      if (locked) return openPaywall(s.plan === 'standard' ? 'Este estilo está desde el plan Estándar.' : 'Este estilo está en los planes Pro y VIP.');
       state.styleId = s.id;
       renderStyles();
     });
@@ -266,10 +268,10 @@ function setAudioButton(playing, loading = false) {
 
 function renderVoiceSelect() {
   const select = $('voice-select');
-  const show = state.plan === 'vip' && state.voices.length > 0;
+  const show = state.voices.some((v) => v.usable);
   select.classList.toggle('hidden', !show);
   select.innerHTML = '';
-  const options = [{ id: '', name: 'Narrador' }, ...state.voices];
+  const options = [{ id: '', name: 'Narrador' }, ...state.voices.filter((v) => v.usable)];
   for (const v of options) {
     const opt = document.createElement('option');
     opt.value = v.id;
@@ -368,7 +370,7 @@ function stopAudio() {
   setAudioButton(false);
 }
 
-// ---------- Voces de la familia (VIP) ----------
+// ---------- Voces de la familia (Pro y VIP) ----------
 
 function renderVoices() {
   const list = $('voices-list');
@@ -389,6 +391,9 @@ function renderVoices() {
   }
   $('voices-empty').classList.toggle('hidden', state.voices.length > 0);
   $('add-voice-btn').classList.toggle('hidden', state.plan === 'vip' && state.voices.length >= state.maxVoices);
+  $('voices-empty').textContent = state.maxVoices > 0 && state.maxVoices < 6
+    ? 'Tu plan incluye 1 voz. Con el VIP puedes guardar hasta 6.'
+    : 'Graba a papá, mamá, los abuelos o los tíos y que el cuento se lea con su voz.';
 }
 
 async function deleteVoice(v) {
@@ -403,8 +408,11 @@ async function deleteVoice(v) {
 const recorder = { media: null, stream: null, chunks: [], wav: null, timer: null, started: 0, consent: null };
 
 function openVoiceModal() {
-  if (state.plan !== 'vip') {
-    return openPaywall('Graba a papá, mamá o los abuelos y que lean el cuento con su voz. Está en el plan VIP.', 'vip');
+  if (state.maxVoices === 0) {
+    return openPaywall('Graba a papá, mamá o los abuelos y que lean el cuento con su voz. Prueba el VIP 3 días gratis.');
+  }
+  if (state.voices.length >= state.maxVoices) {
+    return openPaywall('Con el VIP puedes guardar hasta 6 voces de la familia y escucharlas 2 horas al mes.');
   }
   askAdult(showVoiceModal);
 }
@@ -587,8 +595,9 @@ async function saveVoice() {
 
 // ---------- Suscripción ----------
 
-function openPaywall(reason, plan) {
-  if (plan === 'vip' && state.vipEnabled) state.selectedPlan = 'vip';
+// Siempre se abre con el VIP elegido: es el plan que queremos que compare primero.
+function openPaywall(reason) {
+  state.selectedPlan = state.voicePlansEnabled ? 'vip' : 'standard';
   $('paywall-reason').textContent = reason || 'Cuentos ilimitados, narrados con voz natural y con valores.';
   $('checkout-error').classList.add('hidden');
   $('desist-consent').checked = false;
@@ -605,20 +614,20 @@ function closePaywall() {
 
 function renderPrices() {
   const p = PRICES[state.billing];
-  $('price-std').innerHTML = p.std.price;
-  $('subtext-std').textContent = p.std.sub;
-  $('price-vip').innerHTML = p.vip.price;
-  $('subtext-vip').textContent = p.vip.sub;
-  if (!state.vipEnabled) state.selectedPlan = 'standard';
-  $('cta-title').textContent = `Suscribirme por ${p.cta[state.selectedPlan]}`;
-  $('cta-subtext').textContent = state.hadTrial ? '' : 'Los 3 primeros días son gratis';
-  $('card-standard').classList.toggle('plan-card-active', state.selectedPlan === 'standard');
-  $('card-vip').classList.toggle('plan-card-active', state.selectedPlan === 'vip');
-  $('card-vip').classList.toggle('plan-card-disabled', !state.vipEnabled);
-  $('card-vip').setAttribute('aria-disabled', String(!state.vipEnabled));
-  $('vip-badge').textContent = state.vipEnabled ? 'Voces de la familia' : 'Próximamente';
-  $('btn-period-annual').classList.toggle('period-btn-active', state.billing === 'annual');
-  $('btn-period-monthly').classList.toggle('period-btn-active', state.billing === 'monthly');
+  if (!state.voicePlansEnabled) state.selectedPlan = 'standard';
+  for (const plan of PLANS) {
+    $(`price-${plan}`).innerHTML = p[plan].price;
+    $(`subtext-${plan}`).textContent = p[plan].sub;
+    const card = $(`card-${plan}`);
+    const disabled = plan !== 'standard' && !state.voicePlansEnabled;
+    card.classList.toggle('plan-card-active', state.selectedPlan === plan);
+    card.classList.toggle('plan-card-disabled', disabled);
+    card.setAttribute('aria-checked', String(state.selectedPlan === plan));
+    card.setAttribute('aria-disabled', String(disabled));
+  }
+  $('vip-badge').textContent = state.voicePlansEnabled ? 'El favorito de las familias' : 'Próximamente';
+  $('cta-title').textContent = `Suscribirme por ${p[state.selectedPlan].cta}`;
+  $('cta-subtext').textContent = state.selectedPlan === 'vip' && !state.hadTrial ? 'Los 3 primeros días son gratis' : '';
 }
 
 // Control parental: una suma sencilla antes de ir al pago o al portal.
@@ -736,12 +745,12 @@ function bind() {
   $('manage-btn').addEventListener('click', () => askAdult(openPortal));
   $('gate-cancel').addEventListener('click', closeGate);
   const pickPlan = (plan) => {
-    if (plan === 'vip' && !state.vipEnabled) return;
+    if (plan !== 'standard' && !state.voicePlansEnabled) return;
     state.selectedPlan = plan;
     renderPrices();
   };
-  for (const plan of ['standard', 'vip']) {
-    const card = $(plan === 'vip' ? 'card-vip' : 'card-standard');
+  for (const plan of PLANS) {
+    const card = $(`card-${plan}`);
     card.addEventListener('click', () => pickPlan(plan));
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {

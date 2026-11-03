@@ -66,5 +66,5 @@ export function planFromSubscription(sub) {
   const active = sub && ['active', 'trialing'].includes(sub.status);
   if (!active) return 'free';
   const plan = sub.metadata?.plan;
-  return plan === 'vip' ? 'vip' : 'standard';
+  return ['pro', 'vip'].includes(plan) ? plan : 'standard';
 }

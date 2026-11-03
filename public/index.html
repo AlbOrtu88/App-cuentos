@@ -74,7 +74,7 @@
 
       <section id="voices-section" class="border border-slate-800 rounded-2xl p-3 space-y-2">
         <div class="flex items-center justify-between">
-          <span class="field-label mb-0">Voces de la familia <span class="text-purple-300">👑 VIP</span></span>
+          <span class="field-label mb-0">Voces de la familia <span class="text-purple-300">👑 Pro y VIP</span></span>
           <button id="add-voice-btn" type="button" class="text-[11px] text-amber-400 hover:underline">+ Añadir voz</button>
         </div>
         <p id="voices-empty" class="text-[11px] text-slate-500">Graba a papá, mamá, los abuelos o los tíos y que el cuento se lea con su voz.</p>
@@ -120,8 +120,8 @@
   </div>
 
   <!-- PAYWALL -->
-  <div id="paywall-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
-    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative text-slate-100 space-y-5">
+  <div id="paywall-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 backdrop-blur-md flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
+    <div class="my-auto w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative text-slate-100 space-y-5">
       <button id="close-paywall" type="button" aria-label="Cerrar" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 text-lg p-2 rounded-full leading-none">✕</button>
 
       <header class="text-center space-y-1 pt-2">
@@ -139,33 +139,38 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3 pt-1">
-        <div id="card-standard" role="button" tabindex="0" class="plan-card relative bg-slate-950/70 rounded-2xl p-4 cursor-pointer">
-          <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap">Más popular</div>
-          <span class="text-xs font-bold text-amber-300">Estándar</span>
-          <div class="text-2xl font-black text-white mt-1.5" id="price-std"></div>
-          <p class="text-[11px] text-amber-200/90 font-medium" id="subtext-std"></p>
-          <hr class="border-slate-800 my-3">
-          <ul class="text-[11px] space-y-2 text-slate-300">
-            <li>✓ Cuentos ilimitados</li>
-            <li>✓ Duración: 2, 3 y 5 min</li>
-            <li>✓ 4 estilos de dibujo</li>
-            <li>✓ Narrador con voz natural</li>
+      <div class="space-y-3 pt-1" role="radiogroup" aria-label="Elige tu plan">
+        <div id="card-standard" role="radio" tabindex="0" class="plan-card relative bg-slate-950/70 rounded-2xl p-3.5 cursor-pointer">
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-sm font-bold text-slate-200">Estándar</span>
+            <span class="text-lg font-black text-white" id="price-standard"></span>
+          </div>
+          <p class="text-[11px] text-slate-400" id="subtext-standard"></p>
+          <p class="text-[11px] text-slate-300 mt-1.5">Cuentos ilimitados de 2 a 5 min · 4 estilos · Narrador 1 h al mes</p>
+        </div>
+
+        <div id="card-vip" role="radio" tabindex="0" class="plan-card relative bg-purple-500/10 rounded-2xl p-4 pt-5 cursor-pointer">
+          <div class="absolute -top-2.5 left-4 bg-purple-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap" id="vip-badge">El favorito de las familias</div>
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-base font-bold text-purple-200">VIP Familiar</span>
+            <span class="text-2xl font-black text-white" id="price-vip"></span>
+          </div>
+          <p class="text-[11px] text-purple-200/80" id="subtext-vip"></p>
+          <ul class="text-[11px] space-y-1 text-slate-200 mt-2">
+            <li>✓ Hasta 6 voces de la familia: papá, mamá, abuelos, tíos</li>
+            <li>✓ 2 horas al mes con sus voces</li>
+            <li>✓ Cuentos de 10 min y 10 estilos</li>
+            <li>✓ 3 días de prueba gratis</li>
           </ul>
         </div>
 
-        <div id="card-vip" role="button" tabindex="0" class="plan-card relative bg-slate-950/70 rounded-2xl p-4 cursor-pointer">
-          <div id="vip-badge" class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-purple-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap">Próximamente</div>
-          <span class="text-xs font-bold text-purple-300">VIP Familiar</span>
-          <div class="text-2xl font-black text-white mt-1.5" id="price-vip"></div>
-          <p class="text-[11px] text-slate-400" id="subtext-vip"></p>
-          <hr class="border-slate-800 my-3">
-          <ul class="text-[11px] space-y-2 text-slate-300">
-            <li>✓ Todo lo de Estándar</li>
-            <li>✓ Cuentos de 10 min</li>
-            <li>✓ 10 estilos visuales</li>
-            <li>✓ Voces de la familia: papá, mamá, abuelos, tíos (hasta 6)</li>
-          </ul>
+        <div id="card-pro" role="radio" tabindex="0" class="plan-card relative bg-slate-950/70 rounded-2xl p-3.5 cursor-pointer">
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-sm font-bold text-slate-200">Pro</span>
+            <span class="text-lg font-black text-white" id="price-pro"></span>
+          </div>
+          <p class="text-[11px] text-slate-400" id="subtext-pro"></p>
+          <p class="text-[11px] text-slate-300 mt-1.5">Cuentos de 10 min · 10 estilos · 1 voz de la familia, 20 min al mes</p>
         </div>
       </div>
 
@@ -204,19 +209,19 @@
   </div>
 
   <!-- GRABAR VOZ (consentimiento en dos pasos) -->
-  <div id="voice-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="voice-title">
-    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 relative">
+  <div id="voice-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="voice-title">
+    <div class="my-auto w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 relative">
       <button id="close-voice" type="button" aria-label="Cerrar" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 text-lg p-2 leading-none">✕</button>
       <h2 id="voice-title" class="text-lg font-bold text-white">Añadir una voz familiar</h2>
 
       <!-- Paso 1: información y consentimiento de quien graba -->
       <form id="voice-step1" class="space-y-4">
-        <p class="text-sm text-slate-300">Vas a grabar unos 20 segundos de la voz de un familiar para que lea los cuentos (hasta 6 voces por cuenta). Antes, la persona que va a grabar debe saber esto:</p>
+        <p class="text-sm text-slate-300">Vas a grabar unos 20 segundos de la voz de un familiar para que lea los cuentos (1 en el plan Pro y hasta 6 en el VIP). Antes, la persona que va a grabar debe saber esto:</p>
         <ul class="text-xs text-slate-400 space-y-1.5 list-disc pl-4">
           <li>Su voz se usará solo para leer cuentos en Cuentos Mágicos, nunca para otra cosa ni para entrenar inteligencias artificiales.</li>
           <li>La grabación la procesa nuestro proveedor fal.ai, en Estados Unidos, por cuenta nuestra.</li>
           <li>Puede pedir que la borremos cuando quiera, desde la app o escribiendo a nuestro email de contacto.</li>
-          <li>Se borrará sola 30 días después de cancelar el plan VIP.</li>
+          <li>Se borrará sola 30 días después de cancelar el plan o de pasar a uno que no la incluya.</li>
         </ul>
         <div class="grid grid-cols-2 gap-2.5">
           <div>

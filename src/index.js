@@ -4,7 +4,7 @@
  * las imágenes y audios en R2, y cobra con Stripe.
  */
 
-import { DURATIONS, FREE_STORY_LIMIT, LESSONS, MAX_VOICES, STYLES, planAllows, targetWords } from './config.js';
+import { DURATIONS, FREE_STORY_LIMIT, LESSONS, MAX_VOICES, PAID_PLANS, STYLES, limitsFor, planAllows, targetWords } from './config.js';
 import { cleanAge, cleanField, monthKey, stripNames } from './text.js';
 import { generateImage, generateStoryText, synthesizeClonedSpeech, synthesizeSpeech } from './ai.js';
 import { signPath, verifySignedPath } from './sign.js';
@@ -63,7 +63,7 @@ async function routeApi(request, env, url, session) {
   if (path === '/api/generate-story' && method === 'POST') return handleGenerate(request, env, url, session);
   const audioMatch = path.match(/^\/api\/story\/([a-z0-9-]+)\/audio$/);
   if (audioMatch && method === 'POST') return handleAudio(request, env, url, session, audioMatch[1]);
-  if (path === '/api/voices' && method === 'GET') return json({ voices: publicVoices(session.user), max: MAX_VOICES });
+  if (path === '/api/voices' && method === 'GET') return json({ voices: publicVoices(session.user), max: limitsFor(session.user.plan).voices });
   if (path === '/api/voices' && method === 'POST') return handleAddVoice(request, env, url, session);
   const voiceMatch = path.match(/^\/api\/voices\/([a-f0-9-]{36})$/);
   if (voiceMatch && method === 'DELETE') return handleDeleteVoice(env, session, voiceMatch[1]);
@@ -118,9 +118,9 @@ function handleMe(env, session) {
     freeRemaining: plan === 'free' ? Math.max(0, FREE_STORY_LIMIT - freeUsed) : null,
     hasBilling: Boolean(session.user.customerId),
     hadTrial: Boolean(session.user.hadTrial),
-    vipEnabled: env.VIP_ENABLED === '1',
+    voicePlansEnabled: env.VOICE_PLANS_ENABLED === '1',
     voices: publicVoices(session.user),
-    maxVoices: MAX_VOICES,
+    maxVoices: limitsFor(plan).voices,
   });
 }
 
@@ -138,7 +138,8 @@ async function handleGenerate(request, env, url, session) {
   if (!lesson) return json({ error: 'Moraleja no válida' }, 400);
 
   if (!planAllows(user.plan, DURATIONS[duration]) || !planAllows(user.plan, style.plan)) {
-    const needed = DURATIONS[duration] === 'vip' || style.plan === 'vip' ? 'vip' : 'standard';
+    // Si hace falta más que el Estándar se ofrece directamente el VIP.
+    const needed = planAllows('standard', DURATIONS[duration]) && planAllows('standard', style.plan) ? 'standard' : 'vip';
     return json({ error: 'Esta opción requiere un plan superior.', code: 'upgrade', needed }, 402);
   }
 
@@ -212,7 +213,7 @@ async function hitDailyLimit(request, env, uid, plan) {
 
 // ---------- /api/story/:id/audio ----------
 // Sin voiceId: narrador con voz natural de Google (planes de pago).
-// Con voiceId: voz clonada de un familiar con Chatterbox (plan VIP).
+// Con voiceId: voz clonada de un familiar con Chatterbox (planes Pro y VIP).
 
 async function handleAudio(request, env, url, session, id) {
   const { uid, user } = session;
@@ -222,8 +223,9 @@ async function handleAudio(request, env, url, session, id) {
   const body = await request.json().catch(() => ({}));
   const voice = body.voiceId ? (user.voices || []).find((v) => v.id === body.voiceId) : null;
   if (body.voiceId && !voice) return json({ error: 'Voz no encontrada' }, 404);
-  if (voice && user.plan !== 'vip') {
-    return json({ error: 'Las voces de la familia están en el plan VIP.', code: 'upgrade', needed: 'vip' }, 402);
+  const limits = limitsFor(user.plan);
+  if (voice && !usableVoices(user).some((v) => v.id === voice.id)) {
+    return json({ error: 'Con tu plan no puedes usar esta voz. Con el VIP tienes hasta 6 voces.', code: 'upgrade', needed: 'vip' }, 402);
   }
 
   const story = await env.DATA.get(`story:${id}`, 'json');
@@ -243,8 +245,9 @@ async function handleAudio(request, env, url, session, id) {
     user.clonedChars = 0;
   }
   const counter = voice ? 'clonedChars' : 'audioChars';
-  const cap = parseInt(voice ? env.CLONED_MONTHLY_CHAR_CAP || '45000' : env.AUDIO_MONTHLY_CHAR_CAP || '150000', 10);
-  if ((user[counter] || 0) + text.length > cap) {
+  const cap = voice ? limits.cloneChars : limits.narrChars;
+  const total = (user.audioChars || 0) + (user.clonedChars || 0) + text.length;
+  if ((user[counter] || 0) + text.length > cap || (limits.totalChars && total > limits.totalChars)) {
     const error = voice
       ? 'Has llegado a los minutos de voz familiar de este mes. Puedes seguir con el narrador.'
       : 'Has llegado al uso razonable de voz de este mes.';
@@ -278,24 +281,34 @@ async function handleAudio(request, env, url, session, id) {
 
 // ---------- Voces de la familia (VIP) ----------
 
+// Las voces que el plan permite usar: las más antiguas, hasta el máximo del plan.
+function usableVoices(user) {
+  return (user.voices || []).slice(0, limitsFor(user.plan).voices);
+}
+
 function publicVoices(user) {
-  return (user.voices || []).map(({ id, name }) => ({ id, name }));
+  const usable = new Set(usableVoices(user).map((v) => v.id));
+  return (user.voices || []).map(({ id, name }) => ({ id, name, usable: usable.has(id) }));
 }
 
 const MAX_SAMPLE_BYTES = 3 * 1024 * 1024;
 
 async function handleAddVoice(request, env, url, session) {
   const { uid, user } = session;
-  if (user.plan !== 'vip') {
-    return json({ error: 'Las voces de la familia están en el plan VIP.', code: 'upgrade', needed: 'vip' }, 402);
+  const allowed = limitsFor(user.plan).voices;
+  if (allowed === 0) {
+    return json({ error: 'Las voces de la familia están en los planes Pro y VIP.', code: 'upgrade', needed: 'vip' }, 402);
   }
   // Consentimiento expreso: la voz es un dato biométrico.
   if (url.searchParams.get('consent') !== '1') {
     return json({ error: 'Falta el consentimiento de la persona que graba.' }, 400);
   }
   const voices = user.voices || [];
-  if (voices.length >= MAX_VOICES) {
-    return json({ error: `Puedes guardar hasta ${MAX_VOICES} voces. Borra una para añadir otra.` }, 400);
+  if (voices.length >= allowed) {
+    const error = allowed < MAX_VOICES
+      ? `Tu plan permite ${allowed} voz. Con el VIP puedes guardar hasta ${MAX_VOICES}.`
+      : `Puedes guardar hasta ${MAX_VOICES} voces. Borra una para añadir otra.`;
+    return json({ error, code: allowed < MAX_VOICES ? 'upgrade' : 'max_voices', needed: 'vip' }, allowed < MAX_VOICES ? 402 : 400);
   }
   const name = cleanField(url.searchParams.get('name') || '', '', 20);
   const speaker = cleanField(url.searchParams.get('speaker') || '', '', 40);
@@ -350,9 +363,10 @@ async function deleteVoiceFiles(env, voiceId) {
 
 const VOICE_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Al dejar el VIP las voces se programan para borrarse a los 30 días; si vuelve, se cancela.
+// Si el plan ya no permite todas las voces guardadas (cancelación o bajada de plan),
+// las que sobran se borran a los 30 días; si vuelve a un plan que las cubre, se cancela.
 async function scheduleVoicePurge(env, uid, user) {
-  if (user.plan === 'vip') {
+  if ((user.voices || []).length <= limitsFor(user.plan).voices) {
     if (user.voicesPurgeAt) {
       delete user.voicesPurgeAt;
       await env.DATA.delete(`voicepurge:${uid}`);
@@ -373,9 +387,10 @@ async function purgeExpiredVoices(env, now = Date.now()) {
       if (due > now) continue;
       const uid = name.slice('voicepurge:'.length);
       const user = await env.DATA.get(`user:${uid}`, 'json');
-      if (user && user.plan !== 'vip') {
-        for (const v of user.voices || []) await deleteVoiceFiles(env, v.id);
-        user.voices = [];
+      const keep = user ? limitsFor(user.plan).voices : 0;
+      if (user && (user.voices || []).length > keep) {
+        for (const v of user.voices.slice(keep)) await deleteVoiceFiles(env, v.id);
+        user.voices = user.voices.slice(0, keep);
         delete user.voicesPurgeAt;
         await saveUser(env, uid, user);
         console.log(`[VOCES] borradas las voces de ${uid}`);
@@ -412,15 +427,16 @@ async function serveMedia(env, key) {
 
 const PRICE_ENV = {
   standard: { monthly: 'PRICE_STANDARD_MONTHLY', annual: 'PRICE_STANDARD_ANNUAL' },
+  pro: { monthly: 'PRICE_PRO_MONTHLY', annual: 'PRICE_PRO_ANNUAL' },
   vip: { monthly: 'PRICE_VIP_MONTHLY', annual: 'PRICE_VIP_ANNUAL' },
 };
 
 async function handleCheckout(request, env, url, session) {
   const body = await request.json().catch(() => ({}));
-  const plan = body.plan === 'vip' ? 'vip' : 'standard';
+  const plan = PAID_PLANS.includes(body.plan) ? body.plan : 'standard';
   const billing = body.billing === 'monthly' ? 'monthly' : 'annual';
-  if (plan === 'vip' && env.VIP_ENABLED !== '1') {
-    return json({ error: 'El plan VIP llegará pronto.' }, 400);
+  if (plan !== 'standard' && env.VOICE_PLANS_ENABLED !== '1') {
+    return json({ error: 'Los planes Pro y VIP llegarán pronto.' }, 400);
   }
   // Consentimiento expreso para empezar ya y perder el desistimiento (art. 103.m TRLGDCU).
   if (body.acceptedImmediateStart !== true) {
@@ -437,7 +453,8 @@ async function handleCheckout(request, env, url, session) {
     customer: session.user.customerId || undefined,
     metadata: { uid: session.uid, plan, immediate_start_accepted_at: acceptedAt },
     subscription_data: {
-      trial_period_days: session.user.hadTrial ? undefined : 3,
+      // La prueba gratis es solo del VIP, para que la familia escuche sus propias voces.
+      trial_period_days: plan === 'vip' && !session.user.hadTrial ? 3 : undefined,
       metadata: { uid: session.uid, plan, immediate_start_accepted_at: acceptedAt },
     },
     allow_promotion_codes: 'true',
@@ -469,10 +486,10 @@ async function handleStripeWebhook(request, env) {
     const uid = obj.client_reference_id || obj.metadata?.uid;
     if (uid) {
       const user = (await env.DATA.get(`user:${uid}`, 'json')) || { plan: 'free', freeUsed: 0 };
-      user.plan = obj.metadata?.plan === 'vip' ? 'vip' : 'standard';
+      user.plan = ['pro', 'vip'].includes(obj.metadata?.plan) ? obj.metadata.plan : 'standard';
       user.customerId = obj.customer;
       user.subscriptionId = obj.subscription;
-      user.hadTrial = true;
+      if (user.plan === 'vip') user.hadTrial = true;
       await scheduleVoicePurge(env, uid, user);
       await saveUser(env, uid, user);
     }

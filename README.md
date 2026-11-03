@@ -5,23 +5,27 @@ PWA de cuentos infantiles personalizados para la hora de dormir. Un único Worke
 - **Texto**: Gemini 2.5 Flash, sin razonamiento y con salida JSON.
 - **Ilustración**: FLUX schnell en fal.ai (una por cuento). Sin `FAL_KEY` usa Pollinations, solo para pruebas.
 - **Narrador** (planes de pago): Google Cloud TTS Chirp 3 HD. El MP3 se guarda en R2 y repetir un cuento no cuesta nada.
-- **Voces de la familia** (VIP): Chatterbox Multilingual en fal.ai. Cada cuenta guarda hasta 6 voces (papá, mamá, abuelos, tíos...) y elige cuál narra cada cuento.
+- **Voces de la familia** (Pro y VIP): Chatterbox Multilingual en fal.ai. El Pro guarda 1 voz y el VIP hasta 6 (papá, mamá, abuelos, tíos...); se elige cuál narra cada cuento.
 - **Plan gratis**: 3 cuentos y voz del propio móvil.
-- **Pagos**: Stripe Checkout con 3 días de prueba, portal de cliente y webhook.
+- **Pagos**: Stripe Checkout (3 días de prueba solo en el VIP), portal de cliente y webhook.
 
 El plan y la cuota se guardan en el servidor (KV), no en el navegador.
 
 ## Planes
 
-| | Gratis | Estándar | VIP Familiar |
-|-|-|-|-|
-| Cuentos | 3 | Ilimitados (20 al día) | Ilimitados (20 al día) |
-| Duración | 2 y 3 min | + 5 min | + 10 min |
-| Estilos | 1 | 4 | 10 |
-| Voz | La del móvil | Narrador natural | Narrador + voces de la familia (unos 60 min al mes) |
-| Precio | 0 € | 4,99 €/mes o 39,99 €/año | 14,99 €/mes o 119,99 €/año |
+| | Gratis | Estándar | Pro | VIP Familiar |
+|-|-|-|-|-|
+| Precio | 0 € | 4,99 €/mes o 39,99 €/año | 12,99 €/mes o 99,99 €/año | 14,99 €/mes o 119,99 €/año |
+| Cuentos | 3 | Ilimitados (20 al día) | Ilimitados | Ilimitados |
+| Duración | 2 y 3 min | + 5 min | + 10 min | + 10 min |
+| Estilos | 1 | 4 | 10 | 10 |
+| Narrador natural | Voz del móvil | 1 h al mes | 2 h 30 min al mes | 3 h 20 min al mes en total |
+| Voces de la familia | No | No | 1 voz, 20 min al mes | Hasta 6 voces, 2 h al mes |
+| Prueba gratis | | No | No | 3 días |
 
-El VIP no se puede comprar hasta que pongas `VIP_ENABLED = "1"` en `wrangler.toml`.
+El Pro es la opción ancla: cuesta 2 € menos que el VIP para que el VIP parezca la compra lógica. La pantalla de pago se abre siempre con el VIP elegido. Los topes de minutos están en `src/config.js` (`PLAN_LIMITS`).
+
+Pro y VIP no se pueden comprar hasta que pongas `VOICE_PLANS_ENABLED = "1"` en `wrangler.toml`.
 
 ## Probar en local (sin gastar en IA)
 
@@ -31,13 +35,14 @@ cat > .dev.vars <<'VARS'
 MOCK_AI=1
 ENVIRONMENT=development
 MEDIA_SIGNING_KEY=cualquier-texto
-# DEV_PLAN=vip   # descomenta para probar como VIP sin pagar
+# DEV_PLAN=vip   # descomenta para probar un plan (standard, pro o vip) sin pagar
+# VOICE_PLANS_ENABLED=1
 VARS
 npm run dev        # http://localhost:8787
 npm test
 ```
 
-Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del navegador. Las voces de la familia no se pueden probar de verdad en local porque fal.ai tiene que descargar la muestra desde una URL pública. Las voces se borran solas 30 días después de dejar el VIP (tarea diaria del Worker).
+Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del navegador. Las voces de la familia no se pueden probar de verdad en local porque fal.ai tiene que descargar la muestra desde una URL pública. Las voces que el plan ya no cubre se borran a los 30 días (tarea diaria del Worker).
 
 ## Poner en marcha
 
@@ -63,7 +68,7 @@ Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del nave
    Limita la clave de Google TTS a la API de Text-to-Speech y pon una alerta de presupuesto en Google Cloud y en fal.ai.
 
 3. **Stripe**
-   - Crea el producto «Estándar» con dos precios (4,99 €/mes y 39,99 €/año) y, si vas a vender VIP, el producto «VIP Familiar» (14,99 €/mes y 119,99 €/año). Copia los `price_...` en `wrangler.toml`.
+   - Crea tres productos con dos precios cada uno: «Estándar» (4,99 €/mes y 39,99 €/año), «Pro» (12,99 €/mes y 99,99 €/año) y «VIP Familiar» (14,99 €/mes y 119,99 €/año). Copia los `price_...` en `wrangler.toml`.
    - Activa el portal de cliente (Settings → Billing → Customer portal) con cancelación y cambio de plan.
    - Crea un webhook a `https://TU-DOMINIO/api/stripe-webhook` con los eventos `checkout.session.completed`, `customer.subscription.updated` y `customer.subscription.deleted`. Su secreto es `STRIPE_WEBHOOK_SECRET`.
 
@@ -80,10 +85,10 @@ Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del nave
 |-|-|-|
 | `FREE_DAILY_IP_LIMIT` | 10 | Cuentos gratis por IP y día |
 | `PAID_DAILY_LIMIT` | 20 | Cuentos por cuenta de pago y día |
-| `AUDIO_MONTHLY_CHAR_CAP` | 150.000 | Caracteres de narrador al mes (unas 20 h) |
-| `CLONED_MONTHLY_CHAR_CAP` | 45.000 | Caracteres con voces de la familia al mes (unos 60 min, ~1,15 $) |
 
-Chatterbox cuesta 0,025 $ por 1.000 caracteres: unos 0,09 $ un cuento de 5 minutos y 0,19 $ uno de 10. Cada audio se guarda, así que volver a escucharlo es gratis.
+Los minutos de narrador y de voces de la familia de cada plan están en `PLAN_LIMITS` (`src/config.js`). Si alguien baja a un plan con menos voces, las que sobran se borran a los 30 días.
+
+Chatterbox cuesta 0,025 $ por 1.000 caracteres: unos 0,09 $ un cuento de 5 minutos y 0,19 $ uno de 10. Cada audio se guarda, así que volver a escucharlo es gratis. Los márgenes de cada plan están en el documento de costes del proyecto.
 
 ## Pendiente
 

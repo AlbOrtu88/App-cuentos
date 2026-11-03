@@ -54,3 +54,16 @@ test('si vuelve al VIP antes de 30 días no se borra nada', async () => {
   assert.ok(env.r2.has('voicesrc/v1'));
   assert.equal(user.voicesPurgeAt, undefined);
 });
+
+test('al bajar de VIP a Pro se conserva la voz más antigua y el resto se borra a los 30 días', async () => {
+  const env = fakeEnv();
+  const user = { plan: 'pro', voices: [{ id: 'a', name: 'Papá' }, { id: 'b', name: 'Mamá' }, { id: 'c', name: 'Abuela' }] };
+  for (const id of ['a', 'b', 'c']) env.r2.set(`voicesrc/${id}`, 1);
+  await scheduleVoicePurge(env, 'u3', user);
+  env.kv.set('user:u3', JSON.stringify(user));
+  await purgeExpiredVoices(env, Date.now() + 31 * 86400000);
+  assert.ok(env.r2.has('voicesrc/a'));
+  assert.ok(!env.r2.has('voicesrc/b'));
+  assert.ok(!env.r2.has('voicesrc/c'));
+  assert.deepEqual(JSON.parse(env.kv.get('user:u3')).voices.map((v) => v.id), ['a']);
+});

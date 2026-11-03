@@ -22,5 +22,6 @@ test('verifyStripeSignature acepta firmas válidas y rechaza las malas', async (
 test('planFromSubscription', () => {
   assert.equal(planFromSubscription({ status: 'trialing', metadata: { plan: 'vip' } }), 'vip');
   assert.equal(planFromSubscription({ status: 'active', metadata: {} }), 'standard');
+  assert.equal(planFromSubscription({ status: 'active', metadata: { plan: 'pro' } }), 'pro');
   assert.equal(planFromSubscription({ status: 'canceled', metadata: { plan: 'vip' } }), 'free');
 });
