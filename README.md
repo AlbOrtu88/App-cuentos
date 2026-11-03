@@ -37,7 +37,7 @@ npm run dev        # http://localhost:8787
 npm test
 ```
 
-Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del navegador. Las voces de la familia no se pueden probar de verdad en local porque fal.ai tiene que descargar la muestra desde una URL pública.
+Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del navegador. Las voces de la familia no se pueden probar de verdad en local porque fal.ai tiene que descargar la muestra desde una URL pública. Las voces se borran solas 30 días después de dejar el VIP (tarea diaria del Worker).
 
 ## Poner en marcha
 

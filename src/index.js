@@ -14,6 +14,8 @@ import { planFromSubscription, stripeRequest, verifyStripeSignature } from './st
 const COOKIE = 'cm_uid';
 const STORY_TTL = 60 * 60 * 24 * 90; // los cuentos se guardan 90 días
 
+export { purgeExpiredVoices, scheduleVoicePurge };
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -47,6 +49,11 @@ export default {
       console.error('[ERROR]', path, err.message);
       return json({ error: 'Error interno del servidor' }, 500);
     }
+  },
+
+  // Tarea diaria (cron en wrangler.toml): borra las voces 30 días después de dejar el VIP.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(purgeExpiredVoices(env));
   },
 };
 
@@ -110,6 +117,7 @@ function handleMe(env, session) {
     plan,
     freeRemaining: plan === 'free' ? Math.max(0, FREE_STORY_LIMIT - freeUsed) : null,
     hasBilling: Boolean(session.user.customerId),
+    hadTrial: Boolean(session.user.hadTrial),
     vipEnabled: env.VIP_ENABLED === '1',
     voices: publicVoices(session.user),
     maxVoices: MAX_VOICES,
@@ -290,7 +298,10 @@ async function handleAddVoice(request, env, url, session) {
     return json({ error: `Puedes guardar hasta ${MAX_VOICES} voces. Borra una para añadir otra.` }, 400);
   }
   const name = cleanField(url.searchParams.get('name') || '', '', 20);
+  const speaker = cleanField(url.searchParams.get('speaker') || '', '', 40);
+  const relation = cleanField(url.searchParams.get('relation') || '', '', 20);
   if (!name) return json({ error: 'Ponle un nombre a la voz (por ejemplo, Papá).' }, 400);
+  if (!speaker || !relation) return json({ error: 'Falta el nombre de quien graba o su relación con el niño.' }, 400);
 
   const declared = parseInt(request.headers.get('Content-Length') || '0', 10);
   if (declared > MAX_SAMPLE_BYTES) return json({ error: 'La grabación es demasiado larga.' }, 413);
@@ -304,11 +315,13 @@ async function handleAddVoice(request, env, url, session) {
     return json({ error: 'El audio no es válido. Vuelve a grabarlo.' }, 400);
   }
   if (info.seconds < 8) return json({ error: 'Graba al menos 10 segundos para que la voz se parezca.' }, 400);
-  if (info.seconds > 40) return json({ error: 'Graba como mucho 30 segundos.' }, 400);
+  if (info.seconds > 45) return json({ error: 'Graba como mucho 40 segundos.' }, 400);
 
   const id = crypto.randomUUID();
   await env.MEDIA.put(`voicesrc/${id}`, bytes, { httpMetadata: { contentType: 'audio/wav' } });
-  voices.push({ id, name, createdAt: new Date().toISOString(), consentAt: new Date().toISOString() });
+  // La grabación empieza con la frase de consentimiento, así que la propia muestra sirve de prueba.
+  const now = new Date().toISOString();
+  voices.push({ id, name, speaker, relation, createdAt: now, consentAt: now });
   user.voices = voices;
   await saveUser(env, uid, user);
   return json({ voices: publicVoices(user) });
@@ -318,17 +331,59 @@ async function handleDeleteVoice(env, session, voiceId) {
   const { uid, user } = session;
   const voices = user.voices || [];
   if (!voices.some((v) => v.id === voiceId)) return json({ error: 'Voz no encontrada' }, 404);
+  await deleteVoiceFiles(env, voiceId);
+  user.voices = voices.filter((v) => v.id !== voiceId);
+  await saveUser(env, uid, user);
+  return json({ voices: publicVoices(user) });
+}
+
+// Borra la muestra de voz y los cuentos ya narrados con ella.
+async function deleteVoiceFiles(env, voiceId) {
   await env.MEDIA.delete(`voicesrc/${voiceId}`);
-  // Borra también los cuentos ya narrados con esa voz.
   let cursor;
   do {
     const page = await env.MEDIA.list({ prefix: `audio/${voiceId}/`, cursor });
     if (page.objects.length) await env.MEDIA.delete(page.objects.map((o) => o.key));
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
-  user.voices = voices.filter((v) => v.id !== voiceId);
-  await saveUser(env, uid, user);
-  return json({ voices: publicVoices(user) });
+}
+
+const VOICE_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Al dejar el VIP las voces se programan para borrarse a los 30 días; si vuelve, se cancela.
+async function scheduleVoicePurge(env, uid, user) {
+  if (user.plan === 'vip') {
+    if (user.voicesPurgeAt) {
+      delete user.voicesPurgeAt;
+      await env.DATA.delete(`voicepurge:${uid}`);
+    }
+    return;
+  }
+  if (!user.voices?.length || user.voicesPurgeAt) return;
+  user.voicesPurgeAt = Date.now() + VOICE_GRACE_MS;
+  await env.DATA.put(`voicepurge:${uid}`, String(user.voicesPurgeAt));
+}
+
+async function purgeExpiredVoices(env, now = Date.now()) {
+  let cursor;
+  do {
+    const page = await env.DATA.list({ prefix: 'voicepurge:', cursor });
+    for (const { name } of page.keys) {
+      const due = parseInt((await env.DATA.get(name)) || '0', 10);
+      if (due > now) continue;
+      const uid = name.slice('voicepurge:'.length);
+      const user = await env.DATA.get(`user:${uid}`, 'json');
+      if (user && user.plan !== 'vip') {
+        for (const v of user.voices || []) await deleteVoiceFiles(env, v.id);
+        user.voices = [];
+        delete user.voicesPurgeAt;
+        await saveUser(env, uid, user);
+        console.log(`[VOCES] borradas las voces de ${uid}`);
+      }
+      await env.DATA.delete(name);
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
 }
 
 // La muestra de voz solo se sirve con una URL firmada y que caduca (para fal.ai).
@@ -367,6 +422,11 @@ async function handleCheckout(request, env, url, session) {
   if (plan === 'vip' && env.VIP_ENABLED !== '1') {
     return json({ error: 'El plan VIP llegará pronto.' }, 400);
   }
+  // Consentimiento expreso para empezar ya y perder el desistimiento (art. 103.m TRLGDCU).
+  if (body.acceptedImmediateStart !== true) {
+    return json({ error: 'Marca la casilla para empezar a usar el servicio.' }, 400);
+  }
+  const acceptedAt = new Date().toISOString();
   const price = env[PRICE_ENV[plan][billing]];
   if (!env.STRIPE_SECRET_KEY || !price) return json({ error: 'Pagos no configurados' }, 503);
 
@@ -375,10 +435,10 @@ async function handleCheckout(request, env, url, session) {
     line_items: { 0: { price, quantity: 1 } },
     client_reference_id: session.uid,
     customer: session.user.customerId || undefined,
-    metadata: { uid: session.uid, plan },
+    metadata: { uid: session.uid, plan, immediate_start_accepted_at: acceptedAt },
     subscription_data: {
       trial_period_days: session.user.hadTrial ? undefined : 3,
-      metadata: { uid: session.uid, plan },
+      metadata: { uid: session.uid, plan, immediate_start_accepted_at: acceptedAt },
     },
     allow_promotion_codes: 'true',
     locale: 'es',
@@ -413,6 +473,7 @@ async function handleStripeWebhook(request, env) {
       user.customerId = obj.customer;
       user.subscriptionId = obj.subscription;
       user.hadTrial = true;
+      await scheduleVoicePurge(env, uid, user);
       await saveUser(env, uid, user);
     }
   }
@@ -424,6 +485,7 @@ async function handleStripeWebhook(request, env) {
       user.plan = event.type === 'customer.subscription.deleted' ? 'free' : planFromSubscription(obj);
       user.customerId = obj.customer;
       user.subscriptionId = obj.id;
+      await scheduleVoicePurge(env, uid, user);
       await saveUser(env, uid, user);
     }
   }

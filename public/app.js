@@ -23,18 +23,16 @@ const STYLES = [
   { id: 'felt', plan: 'vip', label: 'Fieltro y lana' },
   { id: 'pencil', plan: 'vip', label: 'Lápiz de color' },
 ];
-const VOICE_PRESETS = ['Papá', 'Mamá', 'Abuelo', 'Abuela', 'Tío', 'Tía'];
-
 const PRICES = {
   annual: {
     std: { price: '3,33 €<span class="text-xs font-normal text-slate-400">/mes</span>', sub: 'Se factura 39,99 € al año' },
     vip: { price: '10,00 €<span class="text-xs font-normal text-slate-400">/mes</span>', sub: 'Se factura 119,99 € al año' },
-    cta: { standard: 'Después 39,99 € al año', vip: 'Después 119,99 € al año' },
+    cta: { standard: '39,99 €/año', vip: '119,99 €/año' },
   },
   monthly: {
     std: { price: '4,99 €<span class="text-xs font-normal text-slate-400">/mes</span>', sub: 'Se factura cada mes' },
     vip: { price: '14,99 €<span class="text-xs font-normal text-slate-400">/mes</span>', sub: 'Se factura cada mes' },
-    cta: { standard: 'Después 4,99 € al mes', vip: 'Después 14,99 € al mes' },
+    cta: { standard: '4,99 €/mes', vip: '14,99 €/mes' },
   },
 };
 const PLAN_NAMES = { standard: 'Estándar', vip: 'VIP' };
@@ -81,6 +79,7 @@ async function loadMe() {
   state.plan = data.plan || 'free';
   state.freeRemaining = data.freeRemaining;
   state.hasBilling = Boolean(data.hasBilling);
+  state.hadTrial = Boolean(data.hadTrial);
   state.vipEnabled = Boolean(data.vipEnabled);
   state.voices = data.voices || [];
   state.maxVoices = data.maxVoices || 6;
@@ -384,7 +383,7 @@ function renderVoices() {
     del.className = 'px-1.5 text-purple-300 hover:text-rose-300';
     del.setAttribute('aria-label', `Borrar la voz de ${v.name}`);
     del.textContent = '✕';
-    del.addEventListener('click', () => deleteVoice(v));
+    del.addEventListener('click', () => askAdult(() => deleteVoice(v)));
     li.append(name, del);
     list.appendChild(li);
   }
@@ -401,36 +400,55 @@ async function deleteVoice(v) {
   toast('Voz borrada.');
 }
 
-const recorder = { media: null, stream: null, chunks: [], wav: null, timer: null, started: 0 };
+const recorder = { media: null, stream: null, chunks: [], wav: null, timer: null, started: 0, consent: null };
 
 function openVoiceModal() {
   if (state.plan !== 'vip') {
     return openPaywall('Graba a papá, mamá o los abuelos y que lean el cuento con su voz. Está en el plan VIP.', 'vip');
   }
-  const presets = $('voice-presets');
-  presets.innerHTML = '';
-  const taken = new Set(state.voices.map((v) => v.name.toLowerCase()));
-  for (const name of VOICE_PRESETS) {
-    if (taken.has(name.toLowerCase())) continue;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'option-btn';
-    btn.textContent = name;
-    btn.addEventListener('click', () => {
-      $('voice-name').value = name;
-      presets.querySelectorAll('button').forEach((b) => b.classList.toggle('option-btn-active', b === btn));
-      updateSaveVoice();
-    });
-    presets.appendChild(btn);
-  }
-  $('voice-name').value = '';
-  $('voice-consent').checked = false;
+  askAdult(showVoiceModal);
+}
+
+function showVoiceModal() {
+  $('voice-step1').reset();
+  $('voice-label-box').classList.add('hidden');
+  $('voice-error1').classList.add('hidden');
   $('voice-error').classList.add('hidden');
   $('record-preview').classList.add('hidden');
   $('record-time').textContent = '0 s';
+  $('voice-step1').classList.remove('hidden');
+  $('voice-step2').classList.add('hidden');
   recorder.wav = null;
+  recorder.consent = null;
   updateSaveVoice();
   $('voice-modal').classList.remove('hidden');
+}
+
+function voiceLabel() {
+  const relation = $('voice-relation').value;
+  return relation === 'otro' ? $('voice-name').value.trim() : relation;
+}
+
+function submitVoiceStep1(e) {
+  e.preventDefault();
+  const speaker = $('speaker-name').value.trim();
+  const relation = $('voice-relation').value;
+  const label = voiceLabel();
+  const err = $('voice-error1');
+  err.classList.add('hidden');
+  const fail = (msg) => {
+    err.textContent = msg;
+    err.classList.remove('hidden');
+  };
+  if (!speaker) return fail('Escribe el nombre de quien graba.');
+  if (!relation) return fail('Elige la relación con el niño o niña.');
+  if (!label) return fail('Ponle un nombre a la voz.');
+  if (state.voices.some((v) => v.name.toLowerCase() === label.toLowerCase())) return fail(`Ya tienes una voz llamada ${label}.`);
+  if (!$('voice-consent').checked) return fail('La persona que graba tiene que marcar la casilla de consentimiento.');
+  recorder.consent = { speaker, relation: relation === 'otro' ? 'Otro' : relation, label };
+  $('consent-speaker').textContent = speaker;
+  $('voice-step1').classList.add('hidden');
+  $('voice-step2').classList.remove('hidden');
 }
 
 function closeVoiceModal() {
@@ -439,7 +457,7 @@ function closeVoiceModal() {
 }
 
 function updateSaveVoice() {
-  $('save-voice').disabled = !(recorder.wav && $('voice-name').value.trim() && $('voice-consent').checked);
+  $('save-voice').disabled = !(recorder.wav && recorder.consent);
 }
 
 function showVoiceError(message) {
@@ -472,7 +490,7 @@ async function toggleRecording() {
   recorder.timer = setInterval(() => {
     const secs = Math.floor((Date.now() - recorder.started) / 1000);
     $('record-time').textContent = `${secs} s`;
-    if (secs >= 30) stopRecording();
+    if (secs >= 40) stopRecording();
   }, 250);
 }
 
@@ -488,9 +506,9 @@ function stopRecording(discard = false) {
 
 async function finishRecording() {
   const secs = (Date.now() - recorder.started) / 1000;
-  if (secs < 10) {
+  if (secs < 12) {
     updateSaveVoice();
-    return showVoiceError('Graba al menos 10 segundos (mejor unos 20) para que la voz se parezca.');
+    return showVoiceError('Lee la frase de consentimiento y el texto completo (unos 25 segundos).');
   }
   try {
     const blob = new Blob(recorder.chunks, { type: recorder.media.mimeType });
@@ -541,12 +559,13 @@ async function toWav(blob, sampleRate) {
 }
 
 async function saveVoice() {
-  const name = $('voice-name').value.trim();
+  const { speaker, relation, label } = recorder.consent;
   const btn = $('save-voice');
   btn.disabled = true;
   btn.textContent = 'Guardando...';
   try {
-    const res = await fetch(`/api/voices?consent=1&name=${encodeURIComponent(name)}`, {
+    const params = new URLSearchParams({ consent: '1', name: label, speaker, relation });
+    const res = await fetch(`/api/voices?${params}`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'audio/wav' },
@@ -557,7 +576,7 @@ async function saveVoice() {
     state.voices = data.voices;
     renderVoices();
     closeVoiceModal();
-    toast(`Voz de ${name} guardada. Elígela al escuchar un cuento.`);
+    toast(`Voz de ${label} guardada. Elígela al escuchar un cuento.`);
   } catch {
     showVoiceError('Sin conexión. Inténtalo de nuevo.');
   } finally {
@@ -572,6 +591,8 @@ function openPaywall(reason, plan) {
   if (plan === 'vip' && state.vipEnabled) state.selectedPlan = 'vip';
   $('paywall-reason').textContent = reason || 'Cuentos ilimitados, narrados con voz natural y con valores.';
   $('checkout-error').classList.add('hidden');
+  $('desist-consent').checked = false;
+  $('btn-cta').disabled = true;
   renderPrices();
   $('paywall-modal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -589,8 +610,8 @@ function renderPrices() {
   $('price-vip').innerHTML = p.vip.price;
   $('subtext-vip').textContent = p.vip.sub;
   if (!state.vipEnabled) state.selectedPlan = 'standard';
-  $('cta-subtext').textContent = p.cta[state.selectedPlan];
-  $('cta-title').textContent = state.selectedPlan === 'vip' ? 'Probar VIP 3 días gratis' : 'Probar 3 días gratis';
+  $('cta-title').textContent = `Suscribirme por ${p.cta[state.selectedPlan]}`;
+  $('cta-subtext').textContent = state.hadTrial ? '' : 'Los 3 primeros días son gratis';
   $('card-standard').classList.toggle('plan-card-active', state.selectedPlan === 'standard');
   $('card-vip').classList.toggle('plan-card-active', state.selectedPlan === 'vip');
   $('card-vip').classList.toggle('plan-card-disabled', !state.vipEnabled);
@@ -604,12 +625,22 @@ function renderPrices() {
 let gateAction = null;
 let gateResult = 0;
 
+const NUM_LETRA = {
+  3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis', 7: 'siete', 8: 'ocho', 9: 'nueve',
+  12: 'doce', 13: 'trece', 14: 'catorce', 15: 'quince', 16: 'dieciséis',
+  17: 'diecisiete', 18: 'dieciocho', 19: 'diecinueve', 21: 'veintiuno',
+  22: 'veintidós', 23: 'veintitrés', 24: 'veinticuatro', 25: 'veinticinco',
+  26: 'veintiséis', 27: 'veintisiete', 28: 'veintiocho', 29: 'veintinueve',
+};
+const GRANDES = [12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29];
+
+// Operación escrita en letra para que un niño pequeño no la resuelva solo.
 function askAdult(action) {
-  const a = 6 + Math.floor(Math.random() * 7);
-  const b = 4 + Math.floor(Math.random() * 6);
+  const a = GRANDES[Math.floor(Math.random() * GRANDES.length)];
+  const b = 3 + Math.floor(Math.random() * 7);
   gateResult = a * b;
   gateAction = action;
-  $('gate-question').textContent = `¿Cuánto es ${a} × ${b}?`;
+  $('gate-question').textContent = `¿Cuánto es ${NUM_LETRA[a]} por ${NUM_LETRA[b]}?`;
   $('gate-answer').value = '';
   $('gate-error').classList.add('hidden');
   $('gate-modal').classList.remove('hidden');
@@ -628,7 +659,7 @@ async function startCheckout() {
   try {
     const { ok, data } = await api('/api/checkout', {
       method: 'POST',
-      body: JSON.stringify({ plan: state.selectedPlan, billing: state.billing }),
+      body: JSON.stringify({ plan: state.selectedPlan, billing: state.billing, acceptedImmediateStart: true }),
     });
     if (ok && data.url) {
       window.location.href = data.url;
@@ -638,7 +669,7 @@ async function startCheckout() {
   } catch {
     showCheckoutError('Sin conexión. Inténtalo de nuevo.');
   } finally {
-    btn.disabled = false;
+    btn.disabled = !$('desist-consent').checked;
     btn.classList.remove('opacity-60');
   }
 }
@@ -691,6 +722,17 @@ function bind() {
     renderPrices();
   });
   $('btn-cta').addEventListener('click', () => askAdult(startCheckout));
+  $('desist-consent').addEventListener('change', (e) => {
+    $('btn-cta').disabled = !e.target.checked;
+  });
+  document.querySelectorAll('.adult-link').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      askAdult(() => {
+        window.location.href = link.getAttribute('href');
+      });
+    });
+  });
   $('manage-btn').addEventListener('click', () => askAdult(openPortal));
   $('gate-cancel').addEventListener('click', closeGate);
   const pickPlan = (plan) => {
@@ -715,8 +757,18 @@ function bind() {
   $('add-voice-btn').addEventListener('click', openVoiceModal);
   $('close-voice').addEventListener('click', closeVoiceModal);
   $('record-btn').addEventListener('click', toggleRecording);
-  $('voice-name').addEventListener('input', updateSaveVoice);
-  $('voice-consent').addEventListener('change', updateSaveVoice);
+  $('voice-step1').addEventListener('submit', submitVoiceStep1);
+  $('voice-relation').addEventListener('change', (e) => {
+    $('voice-label-box').classList.toggle('hidden', e.target.value !== 'otro');
+  });
+  $('voice-back').addEventListener('click', () => {
+    stopRecording(true);
+    recorder.wav = null;
+    $('record-preview').classList.add('hidden');
+    $('voice-step2').classList.add('hidden');
+    $('voice-step1').classList.remove('hidden');
+    updateSaveVoice();
+  });
   $('save-voice').addEventListener('click', saveVoice);
   $('gate-form').addEventListener('submit', (e) => {
     e.preventDefault();

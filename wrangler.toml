@@ -19,6 +19,10 @@ id = "REEMPLAZAR_CON_ID_DE_KV"
 binding = "MEDIA"
 bucket_name = "cuentos-magicos-media"
 
+# Tarea diaria: borra las voces 30 días después de dejar el VIP.
+[triggers]
+crons = ["0 3 * * *"]
+
 [vars]
 ENVIRONMENT = "production"
 # Voz de Google Chirp 3 HD en español de España.

@@ -6,3 +6,6 @@ h2 { color: #f1f5f9; font-size: 1.1rem; margin: 28px 0 8px; }
 a { color: #fbbf24; }
 .draft { background: #7f1d1d33; border: 1px solid #b91c1c; color: #fecaca; padding: 10px 14px; border-radius: 12px; font-size: 13px; }
 .fill { background: #fbbf2433; color: #fde68a; padding: 0 4px; border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; display: block; overflow-x: auto; }
+th, td { border: 1px solid #1e293b; padding: 6px 8px; text-align: left; vertical-align: top; }
+th { color: #f1f5f9; background: #0f172a; }

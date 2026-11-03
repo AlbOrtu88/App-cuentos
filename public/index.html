@@ -92,8 +92,9 @@
 
       <div class="flex justify-center gap-4 pt-1 text-[11px] text-slate-500">
         <button id="manage-btn" type="button" class="hidden hover:text-slate-300 underline">Gestionar suscripción</button>
-        <a href="/terminos.html" class="hover:text-slate-300 underline">Términos</a>
-        <a href="/privacidad.html" class="hover:text-slate-300 underline">Privacidad</a>
+        <a href="/terminos.html" class="hover:text-slate-300 underline adult-link">Términos</a>
+        <a href="/privacidad.html" class="hover:text-slate-300 underline adult-link">Privacidad</a>
+        <a href="/aviso-legal.html" class="hover:text-slate-300 underline adult-link">Aviso legal</a>
       </div>
     </main>
 
@@ -169,16 +170,20 @@
       </div>
 
       <div class="space-y-2 pt-2">
-        <button id="btn-cta" type="button" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 rounded-2xl transition shadow-lg shadow-amber-500/20 active:scale-[0.99] flex flex-col items-center justify-center">
-          <span class="text-sm" id="cta-title">Probar 3 días gratis</span>
+        <label class="flex items-start gap-2 text-[11px] text-slate-300">
+          <input id="desist-consent" type="checkbox" class="mt-0.5">
+          <span>Quiero empezar a usar el servicio ya. Entiendo que, al generar mi primer cuento de pago, pierdo el derecho de desistimiento de 14 días.</span>
+        </label>
+        <button id="btn-cta" type="button" disabled class="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:hover:bg-amber-500 text-slate-950 font-bold py-3.5 rounded-2xl transition shadow-lg shadow-amber-500/20 active:scale-[0.99] flex flex-col items-center justify-center">
+          <span class="text-sm" id="cta-title">Suscribirme por 4,99 €/mes</span>
           <span class="text-[10px] font-medium opacity-90" id="cta-subtext"></span>
         </button>
         <p id="checkout-error" class="hidden text-center text-[11px] text-rose-400"></p>
         <p class="text-center text-[10px] text-slate-500">
-          Pago seguro con Stripe · Sin permanencia · Cancela cuando quieras desde «Gestionar suscripción».
+          Precios con IVA incluido. La suscripción se renueva automáticamente cada mes o cada año al mismo precio hasta que la canceles. Puedes cancelar cuando quieras desde «Gestionar suscripción». Pago seguro con Stripe.
         </p>
         <p class="text-center text-[10px] text-slate-500">
-          <a href="/terminos.html" class="underline">Términos</a> · <a href="/privacidad.html" class="underline">Privacidad</a>
+          <a href="/terminos.html" class="underline adult-link">Términos y condiciones</a> · <a href="/privacidad.html" class="underline adult-link">Política de privacidad</a>
         </p>
       </div>
     </div>
@@ -187,8 +192,8 @@
   <!-- CONTROL PARENTAL -->
   <div id="gate-modal" class="hidden fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="gate-title">
     <form id="gate-form" class="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 text-center">
-      <h2 id="gate-title" class="text-lg font-bold text-white">Solo para adultos</h2>
-      <p class="text-xs text-slate-400">Para continuar, responde: <strong id="gate-question" class="text-slate-200"></strong></p>
+      <h2 id="gate-title" class="text-lg font-bold text-white">Zona para adultos</h2>
+      <p class="text-xs text-slate-400">Pide ayuda a un adulto. Escribe el resultado en números: <strong id="gate-question" class="text-slate-200"></strong></p>
       <input id="gate-answer" type="number" inputmode="numeric" required class="field text-center text-lg" aria-label="Respuesta">
       <p id="gate-error" class="hidden text-[11px] text-rose-400">Respuesta incorrecta.</p>
       <div class="flex gap-2">
@@ -198,35 +203,70 @@
     </form>
   </div>
 
-  <!-- GRABAR VOZ -->
+  <!-- GRABAR VOZ (consentimiento en dos pasos) -->
   <div id="voice-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="voice-title">
     <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 relative">
       <button id="close-voice" type="button" aria-label="Cerrar" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 text-lg p-2 leading-none">✕</button>
-      <h2 id="voice-title" class="text-lg font-bold text-white">Añadir una voz de la familia</h2>
+      <h2 id="voice-title" class="text-lg font-bold text-white">Añadir una voz familiar</h2>
 
-      <div>
-        <span class="field-label">¿Quién va a grabar?</span>
-        <div id="voice-presets" class="flex flex-wrap gap-2 text-xs"></div>
-        <input id="voice-name" type="text" maxlength="20" placeholder="O escribe otro: Tía Ana, Yaya..." class="field mt-2">
+      <!-- Paso 1: información y consentimiento de quien graba -->
+      <form id="voice-step1" class="space-y-4">
+        <p class="text-sm text-slate-300">Vas a grabar unos 20 segundos de la voz de un familiar para que lea los cuentos (hasta 6 voces por cuenta). Antes, la persona que va a grabar debe saber esto:</p>
+        <ul class="text-xs text-slate-400 space-y-1.5 list-disc pl-4">
+          <li>Su voz se usará solo para leer cuentos en Cuentos Mágicos, nunca para otra cosa ni para entrenar inteligencias artificiales.</li>
+          <li>La grabación la procesa nuestro proveedor fal.ai, en Estados Unidos, por cuenta nuestra.</li>
+          <li>Puede pedir que la borremos cuando quiera, desde la app o escribiendo a nuestro email de contacto.</li>
+          <li>Se borrará sola 30 días después de cancelar el plan VIP.</li>
+        </ul>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="speaker-name" class="field-label">Nombre de quien graba</label>
+            <input id="speaker-name" type="text" maxlength="40" required autocomplete="off" placeholder="Ej. Carmen" class="field">
+          </div>
+          <div>
+            <label for="voice-relation" class="field-label">Relación con el niño/a</label>
+            <select id="voice-relation" required class="field">
+              <option value="">Elige...</option>
+              <option>Papá</option>
+              <option>Mamá</option>
+              <option>Abuelo</option>
+              <option>Abuela</option>
+              <option>Tío</option>
+              <option>Tía</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div id="voice-label-box" class="hidden">
+          <label for="voice-name" class="field-label">¿Cómo la llamamos en la app?</label>
+          <input id="voice-name" type="text" maxlength="20" autocomplete="off" placeholder="Ej. Yaya, Tía Ana, Padrino" class="field">
+        </div>
+        <label class="flex items-start gap-2 text-[11px] text-slate-300">
+          <input id="voice-consent" type="checkbox" required class="mt-0.5">
+          <span>Soy la persona que va a grabar su voz, soy mayor de edad y acepto que se use como se describe arriba. He leído la <a href="/privacidad.html" target="_blank" class="underline">Política de privacidad</a>.</span>
+        </label>
+        <p id="voice-error1" class="hidden text-[11px] text-rose-400"></p>
+        <button type="submit" class="w-full bg-amber-500 text-slate-950 font-bold py-3 rounded-2xl">Continuar</button>
+      </form>
+
+      <!-- Paso 2: grabación (frase de consentimiento + texto de muestra) -->
+      <div id="voice-step2" class="hidden space-y-4">
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm text-slate-300 leading-relaxed space-y-2">
+          <p class="text-[11px] text-amber-300">Pulsa grabar y lee en voz alta, despacio y con tono de cuento:</p>
+          <p class="text-amber-100">«Me llamo <span id="consent-speaker"></span>. Acepto que Cuentos Mágicos use mi voz para leer cuentos a mi familia.»</p>
+          <p>«Había una vez, en una casita al borde del bosque, una lucecita que se encendía cada noche. Cuando todos se ponían el pijama, la lucecita bajaba despacio, se sentaba en la almohada y contaba en voz bajita las estrellas, una, dos y tres, hasta que todos se quedaban dormidos.»</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="record-btn" type="button" class="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-bold py-2.5 rounded-xl text-sm">● Grabar</button>
+          <span id="record-time" class="text-xs text-slate-400 w-12 text-right">0 s</span>
+        </div>
+        <audio id="record-preview" controls class="hidden w-full"></audio>
+        <p id="voice-error" class="hidden text-[11px] text-rose-400"></p>
+        <div class="flex gap-2">
+          <button id="voice-back" type="button" class="flex-1 py-3 rounded-2xl border border-slate-700 text-slate-300 text-sm">Atrás</button>
+          <button id="save-voice" type="button" disabled class="flex-[2] bg-amber-500 disabled:opacity-40 text-slate-950 font-bold py-3 rounded-2xl">Guardar voz</button>
+        </div>
       </div>
-
-      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm text-slate-300 leading-relaxed">
-        <p class="text-[11px] text-amber-300 mb-1">Lee este texto en voz alta, despacio y con tono de cuento (unos 20 segundos):</p>
-        <p>«Había una vez, en una casita al borde del bosque, una lucecita que se encendía cada noche. Cuando todos se ponían el pijama, la lucecita bajaba despacio, se sentaba en la almohada y contaba en voz bajita las estrellas, una, dos y tres, hasta que todos se quedaban dormidos.»</p>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <button id="record-btn" type="button" class="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-bold py-2.5 rounded-xl text-sm">● Grabar</button>
-        <span id="record-time" class="text-xs text-slate-400 w-12 text-right">0 s</span>
-      </div>
-      <audio id="record-preview" controls class="hidden w-full"></audio>
-
-      <label class="flex items-start gap-2 text-[11px] text-slate-400">
-        <input id="voice-consent" type="checkbox" class="mt-0.5">
-        <span>Soy la persona que graba (o tengo su permiso) y acepto que se use esta grabación solo para narrar los cuentos de esta cuenta. Puedo borrarla cuando quiera. <a href="/privacidad.html" class="underline">Privacidad</a></span>
-      </label>
-      <p id="voice-error" class="hidden text-[11px] text-rose-400"></p>
-      <button id="save-voice" type="button" disabled class="w-full bg-amber-500 disabled:opacity-40 text-slate-950 font-bold py-3 rounded-2xl">Guardar voz</button>
     </div>
   </div>
 
