@@ -377,7 +377,7 @@ function showStory(story, from = 'creator') {
   state.from = from;
   stopAudio();
   $('story-title').textContent = story.titulo;
-  $('reading-badge').textContent = `⏱ ${story.minutes} min`;
+  $('reading-badge').textContent = `${story.minutes} min`;
 
   const content = $('story-content');
   content.innerHTML = '';
