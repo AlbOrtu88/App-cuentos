@@ -1,4 +1,4 @@
-// Cuentos Mágicos: lógica del navegador. Todo lo que cuesta dinero pasa por el Worker (/api/...).
+// Cuentacasa: lógica del navegador. Todo lo que cuesta dinero pasa por el Worker (/api/...).
 'use strict';
 
 const WPM = 125;

@@ -1,4 +1,4 @@
-# Cuentos Mágicos
+# Cuentacasa
 
 PWA de cuentos infantiles personalizados para la hora de dormir. Un único Worker de Cloudflare sirve la app (carpeta `public/`) y la API (`src/`).
 

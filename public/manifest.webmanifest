@@ -1,6 +1,6 @@
 {
-  "name": "Cuentos Mágicos",
-  "short_name": "Cuentos",
+  "name": "Cuentacasa",
+  "short_name": "Cuentacasa",
   "description": "Cuentos personalizados con valores para la hora de dormir.",
   "lang": "es",
   "start_url": "/",
