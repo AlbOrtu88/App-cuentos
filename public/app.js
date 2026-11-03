@@ -106,7 +106,7 @@ function render() {
 
 function renderQuota() {
   const badge = $('quota-badge');
-  badge.className = 'text-center text-[11px] font-medium py-1 px-3 rounded-full border';
+  badge.className = 'text-center text-xs font-medium py-1 px-3 rounded-full border';
   if (state.plan !== 'free') {
     badge.textContent = `Plan ${PLAN_NAMES[state.plan]} · cuentos ilimitados`;
     badge.classList.add('bg-emerald-500/10', 'text-emerald-300', 'border-emerald-500/30');
@@ -401,12 +401,12 @@ function renderVoices() {
   list.innerHTML = '';
   for (const v of state.voices) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-1 bg-lavanda-500/10 border border-lavanda-500/30 text-lavanda-200 text-xs rounded-full pl-3 pr-1 py-0.5';
+    li.className = 'flex items-center gap-1 bg-lavanda-500/10 border border-lavanda-500/30 text-lavanda-200 text-xs rounded-full pl-3 pr-1 py-1';
     const name = document.createElement('span');
     name.textContent = v.name;
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'px-1.5 text-lavanda-300 hover:text-rose-300';
+    del.className = 'tap-chip text-lavanda-300 hover:text-rose-300';
     del.setAttribute('aria-label', `Borrar la voz de ${v.name}`);
     del.textContent = '✕';
     del.addEventListener('click', () => askAdult(() => deleteVoice(v)));
@@ -651,15 +651,15 @@ function renderProfiles() {
   const vip = allows('vip');
   for (const p of state.profiles) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-1 bg-melocoton-500/10 border border-melocoton-500/30 text-melocoton-200 text-xs rounded-full pl-1 pr-1 py-0.5';
+    li.className = 'flex items-center gap-1 bg-melocoton-500/10 border border-melocoton-500/30 text-melocoton-200 text-xs rounded-full pl-1 pr-1 py-1';
     const pick = document.createElement('button');
     pick.type = 'button';
-    pick.className = 'px-2 py-0.5 hover:text-noche-50';
+    pick.className = 'tap-chip px-2 hover:text-noche-50';
     pick.textContent = `${p.name} · ${p.age}`;
     pick.addEventListener('click', () => applyProfile(p));
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'px-1.5 text-melocoton-300/70 hover:text-rose-300';
+    del.className = 'tap-chip text-melocoton-300/70 hover:text-rose-300';
     del.setAttribute('aria-label', `Borrar el perfil de ${p.name}`);
     del.textContent = '✕';
     del.addEventListener('click', () => deleteProfile(p));
@@ -768,7 +768,7 @@ function renderLibrary(forever, offline, isOffline) {
     title.className = 'text-sm font-semibold text-melocoton-100 truncate';
     title.textContent = s.titulo;
     const meta = document.createElement('p');
-    meta.className = 'text-[11px] text-noche-400';
+    meta.className = 'text-xs text-noche-400';
     const date = new Date(s.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     meta.textContent = [s.child, `${s.minutes} min`, date, offline[s.id] ? '⬇ sin conexión' : ''].filter(Boolean).join(' · ');
     text.append(title, meta);
@@ -778,7 +778,7 @@ function renderLibrary(forever, offline, isOffline) {
     if (!isOffline) {
       const del = document.createElement('button');
       del.type = 'button';
-      del.className = 'px-2 text-noche-500 hover:text-rose-300';
+      del.className = 'tap-icon text-noche-500 hover:text-rose-300';
       del.setAttribute('aria-label', `Borrar ${s.titulo}`);
       del.textContent = '✕';
       del.addEventListener('click', () => askAdult(() => deleteSavedStory(s)));
