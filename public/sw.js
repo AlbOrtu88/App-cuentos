@@ -1,9 +1,9 @@
 // Service worker: guarda la interfaz para que abra rápido y sin conexión.
 // La API y los cuentos (/api, /media) van a la red; sin conexión se sirven los cuentos
 // que el VIP guardó en el dispositivo (caché 'cuentos-offline', la llena app.js).
-const CACHE = 'cuentos-v3';
+const CACHE = 'cuentos-v4';
 const OFFLINE = 'cuentos-offline';
-const SHELL = ['/', '/index.html', '/app.js', '/styles.css', '/icon.svg', '/manifest.webmanifest'];
+const SHELL = ['/', '/index.html', '/app.js', '/styles.css', '/icon.svg', '/img/cabecera.webp', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
