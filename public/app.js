@@ -264,6 +264,17 @@ function renderLessons() {
   }
 }
 
+// La edad va de 0 a 10; 0 es válido, así que no vale el «|| 5» de siempre.
+function readAge() {
+  const n = parseInt($('child-age').value, 10);
+  return Number.isNaN(n) ? 5 : Math.max(0, Math.min(10, n));
+}
+
+function ageLabel(age) {
+  if (age === 0) return 'menos de 1 año';
+  return age === 1 ? '1 año' : `${age} años`;
+}
+
 function renderSummary() {
   const dl = $('story-summary');
   if (!dl) return;
@@ -271,7 +282,7 @@ function renderSummary() {
   const style = STYLES.find((s) => s.id === state.styleId);
   const friends = [$('companion-name').value.trim(), $('pet-toy').value.trim()].filter(Boolean).join(' y ');
   const rows = [
-    ['Para', `${$('child-name').value.trim() || 'Leo'}, ${$('child-age').value} años`],
+    ['Para', `${$('child-name').value.trim() || 'Leo'}, ${ageLabel(readAge())}`],
     ['Con', friends || 'Sin acompañantes'],
     ['Aprende', lesson?.label || ''],
     ['Dura', `${state.duration} minutos`],
@@ -326,7 +337,7 @@ function initWizard() {
   $('step-back').addEventListener('click', () => goToStep(wizard.index - 1));
   $('child-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') goToStep(1); });
   const age = $('child-age');
-  const bump = (d) => { age.value = Math.max(2, Math.min(10, (parseInt(age.value, 10) || 5) + d)); };
+  const bump = (d) => { age.value = Math.max(0, Math.min(10, readAge() + d)); };
   $('age-down').addEventListener('click', () => bump(-1));
   $('age-up').addEventListener('click', () => bump(1));
   goToStep(0);
@@ -342,7 +353,7 @@ async function generate() {
 
   const payload = {
     childName: $('child-name').value.trim() || 'Leo',
-    childAge: parseInt($('child-age').value, 10) || 5,
+    childAge: readAge(),
     companion: $('companion-name').value.trim(),
     petToy: $('pet-toy').value.trim(),
     lessonId: $('story-lesson').value,
@@ -805,7 +816,7 @@ function renderProfiles() {
     const pick = document.createElement('button');
     pick.type = 'button';
     pick.className = 'tap-chip px-2 hover:text-papel-50';
-    pick.textContent = `${p.name} · ${p.age}`;
+    pick.textContent = `${p.name} · ${ageLabel(p.age)}`;
     pick.addEventListener('click', () => applyProfile(p));
     const del = document.createElement('button');
     del.type = 'button';
@@ -835,7 +846,7 @@ function saveProfile() {
   if (!name) return toast('Escribe primero el nombre del peque.');
   const profile = {
     name: name.slice(0, 40),
-    age: parseInt($('child-age').value, 10) || 5,
+    age: readAge(),
     companion: $('companion-name').value.trim().slice(0, 40),
     petToy: $('pet-toy').value.trim().slice(0, 40),
   };
