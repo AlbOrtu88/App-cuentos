@@ -63,6 +63,8 @@ Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del nave
    npx wrangler login
    npx wrangler kv namespace create DATA        # pega el id en wrangler.toml
    npx wrangler r2 bucket create cuentos-magicos-media
+   npx wrangler d1 create cuentos-catalogo     # pega el id en wrangler.toml
+   npx wrangler d1 migrations apply cuentos-catalogo --remote
    ```
    **No** añadas reglas de ciclo de vida en R2: los cuentos del VIP se guardan para siempre. La tarea diaria del Worker borra los cuentos de los demás planes a los 30 días, con su imagen y sus audios.
 
@@ -76,6 +78,7 @@ Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del nave
    npx wrangler secret put STRIPE_SECRET_KEY
    npx wrangler secret put STRIPE_WEBHOOK_SECRET
    npx wrangler secret put MEDIA_SIGNING_KEY     # texto aleatorio largo
+   npx wrangler secret put ADMIN_TOKEN           # texto aleatorio largo, para descargar el catálogo
    ```
    Limita la clave de Google TTS a la API de Text-to-Speech y pon una alerta de presupuesto en Google Cloud y en fal.ai.
 
@@ -90,6 +93,23 @@ Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del nave
    ```
 
 5. **Legal**: `public/terminos.html` y `public/privacidad.html` son **borradores**. Rellena los campos en amarillo y que los revise un abogado antes de cobrar. Las voces son datos biométricos: la app pide consentimiento expreso al grabar y permite borrarlas.
+
+## Catálogo para los libros de KDP
+
+Cada cuento nuevo guarda una copia anónima en la base de datos D1 `cuentos-catalogo` (tabla `cuentos`), salvo que la familia lo desactive en Ajustes («Permitir que mis cuentos inspiren libros»). Al guardarla se cambian el nombre del niño por `{NOMBRE}`, el acompañante por `{ACOMPAÑANTE}`, el juguete por `{JUGUETE}` y cualquier otro nombre propio por `{OTRO_NOMBRE}`. Solo guarda el rango de edad (0-1, 2-3, 4-5, 6-7, 8-10), la moraleja, la duración, el estilo y el mes. El id es aleatorio y no se puede relacionar con el usuario.
+
+Cuenta cuántas veces se reabre, se escucha, se comparte con los abuelos y se abre el enlace de los abuelos. Los puntos son `aperturas + 2 × escuchas + 3 × compartidos + 2 × aperturas del enlace`.
+
+Para descargar los mejores de una edad en una hoja de cálculo:
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "https://TU-DOMINIO/api/admin/catalog?edad=4-5&limit=50&formato=csv" -o candidatos-4-5.csv
+```
+
+Filtros: `edad` (0-1, 2-3, 4-5, 6-7, 8-10), `moraleja` (dark, share, patience, kindness, gratitude), `limit` (hasta 500) y `formato=csv` (sin él, JSON).
+
+Antes de publicar, lee y edita cada cuento: la anonimización automática puede dejar algún detalle, y la edición humana es lo que da derechos de autor al libro. En KDP hay que declarar que el texto está generado con IA, y las ilustraciones del libro se generan de nuevo (nunca las de las familias).
 
 ## Límites y costes
 

@@ -59,6 +59,7 @@ const state = {
   voices: [],
   maxVoices: 6,
   voiceId: '',
+  inspireBooks: true,
   story: null,
   from: 'creator', // vista a la que vuelve el lector: 'creator' | 'library'
   library: [],
@@ -96,6 +97,7 @@ async function loadMe() {
   state.voicePlansEnabled = Boolean(data.voicePlansEnabled);
   state.voices = data.voices || [];
   state.maxVoices = data.maxVoices || 6;
+  state.inspireBooks = data.inspireBooks !== false;
   render();
 }
 
@@ -413,6 +415,8 @@ function showStory(story, from = 'creator') {
 
   renderVoiceSelect();
   renderReaderActions();
+  // Aviso visible del uso para libros: se enseña hasta que se cierra.
+  $('books-notice').classList.toggle('hidden', !state.inspireBooks || readStore(BOOKS_NOTICE_KEY, false));
   $('close-reader').textContent = from === 'library' ? '← Mis cuentos' : '← Crear otro';
   $('creator-view').classList.add('hidden');
   $('library-view').classList.add('hidden');
@@ -450,6 +454,13 @@ function renderVoiceSelect() {
   }
   if (!options.some((v) => v.id === state.voiceId)) state.voiceId = '';
   select.value = state.voiceId;
+}
+
+// Avisa una vez por cuento abierto de que se ha escuchado (sirve para elegir los mejores).
+function countListen() {
+  if (!state.story || state.story.listenCounted) return;
+  state.story.listenCounted = true;
+  api(`/api/story/${state.story.id}/played`, { method: 'POST' }).catch(() => {});
 }
 
 async function toggleAudio() {
@@ -519,6 +530,7 @@ function startSpeech() {
   const voice = voices.find((v) => v.lang === 'es-ES') || voices.find((v) => v.lang.startsWith('es'));
   state.audioMode = 'speech';
   setAudioButton(true);
+  countListen();
 
   let i = 0;
   const next = () => {
@@ -1078,6 +1090,35 @@ async function revokeShareLink() {
   toast(ok ? 'Enlace desactivado. Ya nadie puede abrirlo.' : 'No se pudo desactivar el enlace.');
 }
 
+// ---------- Ajustes ----------
+
+const BOOKS_NOTICE_KEY = 'cm_books_notice_seen';
+
+function openSettings() {
+  $('inspire-books').checked = state.inspireBooks !== false;
+  $('settings-modal').classList.remove('hidden');
+}
+
+function closeSettings() {
+  $('settings-modal').classList.add('hidden');
+}
+
+async function saveInspireBooks(e) {
+  const wanted = e.target.checked;
+  const { ok, data } = await api('/api/settings', { method: 'POST', body: JSON.stringify({ inspireBooks: wanted }) });
+  if (!ok) {
+    e.target.checked = !wanted;
+    return toast('No se pudo guardar. Inténtalo de nuevo.');
+  }
+  state.inspireBooks = data.inspireBooks;
+  toast(state.inspireBooks ? 'Tus cuentos nuevos podrán inspirar libros.' : 'Hecho. No guardaremos copia de tus cuentos nuevos.');
+}
+
+function closeBooksNotice() {
+  writeStore(BOOKS_NOTICE_KEY, true);
+  $('books-notice').classList.add('hidden');
+}
+
 // ---------- Suscripción ----------
 
 // Siempre se abre con el VIP elegido: es el plan que queremos que compare primero.
@@ -1202,6 +1243,11 @@ async function handleCheckoutReturn() {
 function bind() {
   $('generate-btn').addEventListener('click', generate);
   $('library-btn').addEventListener('click', openLibrary);
+  $('settings-btn').addEventListener('click', () => askAdult(openSettings));
+  $('books-notice-settings').addEventListener('click', () => askAdult(openSettings));
+  $('books-notice-close').addEventListener('click', closeBooksNotice);
+  $('close-settings').addEventListener('click', closeSettings);
+  $('inspire-books').addEventListener('change', saveInspireBooks);
   $('close-library').addEventListener('click', () => {
     $('library-view').classList.add('hidden');
     $('creator-view').classList.remove('hidden');
@@ -1291,11 +1337,15 @@ function bind() {
     if (!$('gate-modal').classList.contains('hidden')) closeGate();
     else if (!$('voice-modal').classList.contains('hidden')) closeVoiceModal();
     else if (!$('share-modal').classList.contains('hidden')) closeShare();
+    else if (!$('settings-modal').classList.contains('hidden')) closeSettings();
     else if (!$('paywall-modal').classList.contains('hidden')) closePaywall();
   });
 
   const audio = $('story-audio');
-  audio.addEventListener('play', () => setAudioButton(true));
+  audio.addEventListener('play', () => {
+    setAudioButton(true);
+    countListen();
+  });
   audio.addEventListener('pause', () => setAudioButton(false));
   audio.addEventListener('ended', () => {
     audio.currentTime = 0;

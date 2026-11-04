@@ -136,6 +136,7 @@
 
       <div class="flex justify-center gap-4 pt-1 text-xs text-papel-500">
         <button id="manage-btn" type="button" class="hidden hover:text-papel-300 underline">Gestionar suscripción</button>
+        <button id="settings-btn" type="button" class="tap hover:text-papel-300 underline">Ajustes</button>
         <a href="/terminos.html" class="tap hover:text-papel-300 underline adult-link">Términos</a>
         <a href="/privacidad.html" class="tap hover:text-papel-300 underline adult-link">Privacidad</a>
         <a href="/aviso-legal.html" class="tap hover:text-papel-300 underline adult-link">Aviso legal</a>
@@ -175,6 +176,10 @@
         <img id="story-image" alt="Ilustración del cuento" class="w-full h-full object-cover transition-opacity duration-300 opacity-0">
       </div>
       <div id="story-content" class="text-[17px] font-serif leading-[1.75] text-papel-200 space-y-4"></div>
+      <div id="books-notice" class="hidden flex items-start gap-2 text-xs text-papel-400 bg-papel-950 border border-papel-800 rounded-2xl p-3">
+        <p class="flex-1">Los cuentos, sin nombres ni datos de tu familia, pueden inspirar libros de Cuentacasa. Puedes desactivarlo en <button id="books-notice-settings" type="button" class="underline text-terracota-300">Ajustes</button>.</p>
+        <button id="books-notice-close" type="button" aria-label="Cerrar aviso" class="tap-icon px-1 text-papel-500 hover:text-papel-300">✕</button>
+      </div>
     </article>
   </div>
 
@@ -246,6 +251,9 @@
         <p id="checkout-error" class="hidden text-center text-xs text-rose-700"></p>
         <p class="text-center text-xs text-papel-500">
           Precios con IVA incluido. La suscripción se renueva automáticamente cada mes o cada año al mismo precio hasta que la canceles. Puedes cancelar cuando quieras desde «Gestionar suscripción». Pago seguro con Stripe.
+        </p>
+        <p class="text-center text-xs text-papel-500">
+          Los cuentos, sin nombres ni datos de tu familia, pueden inspirar libros de Cuentacasa. Puedes desactivarlo en Ajustes.
         </p>
         <p class="text-center text-xs text-papel-500">
           <a href="/terminos.html" class="underline adult-link">Términos y condiciones</a> · <a href="/privacidad.html" class="underline adult-link">Política de privacidad</a>
@@ -332,6 +340,21 @@
           <button id="save-voice" type="button" disabled class="flex-[2] bg-terracota-500 disabled:opacity-40 text-papel-950 font-bold py-3 rounded-2xl">Guardar voz</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- AJUSTES -->
+  <div id="settings-modal" class="hidden fixed inset-0 z-40 bg-papel-950/95 flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="my-auto w-full max-w-sm bg-papel-900 border border-papel-800 rounded-3xl p-6 space-y-4 relative">
+      <button id="close-settings" type="button" aria-label="Cerrar" class="tap-icon absolute top-4 right-4 text-papel-500 hover:text-papel-300 text-lg p-2 leading-none">✕</button>
+      <h2 id="settings-title" class="text-lg text-papel-50">Ajustes</h2>
+      <label class="flex items-start gap-3 text-sm text-papel-200">
+        <input id="inspire-books" type="checkbox" class="mt-1">
+        <span>Permitir que mis cuentos inspiren libros
+          <span class="block text-xs text-papel-400 mt-1">Guardamos una copia de cada cuento nuevo sin el nombre del niño ni ningún otro nombre, y sin relación con tu cuenta, para crear libros de cuentos infantiles. Nunca usamos tus dibujos, narraciones ni voces. Si lo desactivas, no guardamos copia de los cuentos que crees a partir de ahora.</span>
+        </span>
+      </label>
+      <p class="text-xs text-papel-500">Más información en los <a href="/terminos.html" target="_blank" class="underline">Términos</a> (apartado 9) y la <a href="/privacidad.html" target="_blank" class="underline">Privacidad</a> (apartado 4 bis).</p>
     </div>
   </div>
 
