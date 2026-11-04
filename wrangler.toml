@@ -19,6 +19,15 @@ id = "REEMPLAZAR_CON_ID_DE_KV"
 binding = "MEDIA"
 bucket_name = "cuentos-magicos-media"
 
+# Catálogo anónimo de cuentos para los libros de KDP (opcional: sin él no se guarda nada).
+# Crear con: npx wrangler d1 create cuentos-catalogo  y pegar aquí el id.
+# Tabla: npx wrangler d1 migrations apply cuentos-catalogo --remote
+[[d1_databases]]
+binding = "CATALOG"
+database_name = "cuentos-catalogo"
+database_id = "REEMPLAZAR_CON_ID_DE_D1"
+migrations_dir = "migrations"
+
 # Tarea diaria: borra las voces que el plan ya no cubre y los cuentos que salen de la biblioteca.
 [triggers]
 crons = ["0 3 * * *"]
@@ -47,6 +56,7 @@ PRICE_VIP_ANNUAL = ""
 #   npx wrangler secret put STRIPE_SECRET_KEY
 #   npx wrangler secret put STRIPE_WEBHOOK_SECRET
 #   npx wrangler secret put MEDIA_SIGNING_KEY   (texto aleatorio largo: firma los enlaces de las muestras de voz)
+#   npx wrangler secret put ADMIN_TOKEN         (texto aleatorio largo: descarga del catálogo para los libros)
 #
 # Solo en local (.dev.vars), nunca en producción:
 #   MOCK_AI=1          cuentos de prueba sin gastar en IA

@@ -104,6 +104,7 @@
 
       <div class="flex justify-center gap-4 pt-1 text-[11px] text-slate-500">
         <button id="manage-btn" type="button" class="hidden hover:text-slate-300 underline">Gestionar suscripción</button>
+        <button id="settings-btn" type="button" class="hover:text-slate-300 underline">Ajustes</button>
         <a href="/terminos.html" class="hover:text-slate-300 underline adult-link">Términos</a>
         <a href="/privacidad.html" class="hover:text-slate-300 underline adult-link">Privacidad</a>
         <a href="/aviso-legal.html" class="hover:text-slate-300 underline adult-link">Aviso legal</a>
@@ -143,6 +144,10 @@
         <img id="story-image" alt="Ilustración del cuento" class="w-full h-full object-cover transition-opacity duration-300 opacity-0">
       </div>
       <div id="story-content" class="text-base font-serif leading-relaxed text-stone-300 space-y-4"></div>
+      <div id="books-notice" class="hidden flex items-start gap-2 text-[11px] text-stone-400 bg-stone-950 border border-stone-800 rounded-2xl p-3">
+        <p class="flex-1">📚 Los cuentos, sin nombres ni datos de tu familia, pueden inspirar libros de Cuentos Mágicos. Puedes desactivarlo en <button id="books-notice-settings" type="button" class="underline text-amber-300">Ajustes</button>.</p>
+        <button id="books-notice-close" type="button" aria-label="Cerrar aviso" class="px-1 text-stone-500 hover:text-stone-300">✕</button>
+      </div>
     </article>
   </div>
 
@@ -215,6 +220,9 @@
         <p id="checkout-error" class="hidden text-center text-[11px] text-rose-400"></p>
         <p class="text-center text-[10px] text-slate-500">
           Precios con IVA incluido. La suscripción se renueva automáticamente cada mes o cada año al mismo precio hasta que la canceles. Puedes cancelar cuando quieras desde «Gestionar suscripción». Pago seguro con Stripe.
+        </p>
+        <p class="text-center text-[10px] text-slate-500">
+          Los cuentos, sin nombres ni datos de tu familia, pueden inspirar libros de Cuentos Mágicos. Puedes desactivarlo en Ajustes.
         </p>
         <p class="text-center text-[10px] text-slate-500">
           <a href="/terminos.html" class="underline adult-link">Términos y condiciones</a> · <a href="/privacidad.html" class="underline adult-link">Política de privacidad</a>
@@ -301,6 +309,21 @@
           <button id="save-voice" type="button" disabled class="flex-[2] bg-amber-500 disabled:opacity-40 text-slate-950 font-bold py-3 rounded-2xl">Guardar voz</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- AJUSTES -->
+  <div id="settings-modal" class="hidden fixed inset-0 z-40 bg-slate-950/95 flex justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="my-auto w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 relative">
+      <button id="close-settings" type="button" aria-label="Cerrar" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 text-lg p-2 leading-none">✕</button>
+      <h2 id="settings-title" class="text-lg font-bold text-white">Ajustes</h2>
+      <label class="flex items-start gap-3 text-sm text-slate-200">
+        <input id="inspire-books" type="checkbox" class="mt-1">
+        <span>Permitir que mis cuentos inspiren libros
+          <span class="block text-[11px] text-slate-400 mt-1">Guardamos una copia de cada cuento nuevo sin el nombre del niño ni ningún otro nombre, y sin relación con tu cuenta, para crear libros de cuentos infantiles. Nunca usamos tus dibujos, narraciones ni voces. Si lo desactivas, no guardamos copia de los cuentos que crees a partir de ahora.</span>
+        </span>
+      </label>
+      <p class="text-[11px] text-slate-500">Más información en los <a href="/terminos.html" target="_blank" class="underline">Términos</a> (apartado 9) y la <a href="/privacidad.html" target="_blank" class="underline">Privacidad</a> (apartado 4 bis).</p>
     </div>
   </div>
 

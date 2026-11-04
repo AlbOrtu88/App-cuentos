@@ -13,6 +13,7 @@ import { planFromSubscription, stripeRequest, verifyStripeSignature } from './st
 import {
   addToLibrary, deleteStory, findEntry, keepsForever, listLibrary, newShareToken, purgeExpiredStories, startLibraryGrace,
 } from './library.js';
+import { AGE_RANGES, addToCatalog, bump, newCatalogId, topStories } from './catalog.js';
 
 const COOKIE = 'cm_uid';
 
@@ -38,6 +39,7 @@ export default {
       }
       const sharedMatch = path.match(/^\/api\/shared\/([a-f0-9]{32})$/);
       if (sharedMatch && request.method === 'GET') return await handleShared(env, sharedMatch[1]);
+      if (path === '/api/admin/catalog' && request.method === 'GET') return await handleCatalogExport(request, env, url);
 
       if (path.startsWith('/media/') && request.method === 'GET') {
         return await serveMedia(env, path.slice('/media/'.length));
@@ -79,6 +81,8 @@ async function routeApi(request, env, url, session) {
   const storyMatch = path.match(/^\/api\/story\/([a-f0-9-]{36})$/);
   if (storyMatch && method === 'GET') return handleGetStory(env, session, storyMatch[1]);
   if (storyMatch && method === 'DELETE') return handleDeleteStory(env, session, storyMatch[1]);
+  const playedMatch = path.match(/^\/api\/story\/([a-f0-9-]{36})\/played$/);
+  if (playedMatch && method === 'POST') return handlePlayed(env, session, playedMatch[1]);
   const shareMatch = path.match(/^\/api\/story\/([a-f0-9-]{36})\/share$/);
   if (shareMatch && method === 'POST') return handleShare(request, env, url, session, shareMatch[1]);
   if (shareMatch && method === 'DELETE') return handleUnshare(env, session, shareMatch[1]);
@@ -86,6 +90,7 @@ async function routeApi(request, env, url, session) {
   if (path === '/api/voices' && method === 'POST') return handleAddVoice(request, env, url, session);
   const voiceMatch = path.match(/^\/api\/voices\/([a-f0-9-]{36})$/);
   if (voiceMatch && method === 'DELETE') return handleDeleteVoice(env, session, voiceMatch[1]);
+  if (path === '/api/settings' && method === 'POST') return handleSettings(request, env, session);
   if (path === '/api/checkout' && method === 'POST') return handleCheckout(request, env, url, session);
   if (path === '/api/portal' && method === 'POST') return handlePortal(env, url, session);
   return json({ error: 'Ruta no encontrada' }, 404);
@@ -140,7 +145,18 @@ function handleMe(env, session) {
     voicePlansEnabled: env.VOICE_PLANS_ENABLED === '1',
     voices: publicVoices(session.user),
     maxVoices: limitsFor(plan).voices,
+    inspireBooks: session.user.inspireBooks !== false,
   });
+}
+
+// Ajustes de la familia. Por ahora: «Permitir que mis cuentos inspiren libros».
+async function handleSettings(request, env, session) {
+  const body = await request.json().catch(() => ({}));
+  if (typeof body.inspireBooks === 'boolean') {
+    session.user.inspireBooks = body.inspireBooks;
+    await saveUser(env, session.uid, session.user);
+  }
+  return json({ inspireBooks: session.user.inspireBooks !== false });
 }
 
 // ---------- /api/generate-story ----------
@@ -198,11 +214,14 @@ async function handleGenerate(request, env, url, session) {
   }
 
   const createdAt = Date.now();
+  // Copia anónima para los libros, salvo que la familia lo haya desactivado en Ajustes.
+  const catalogId = user.inspireBooks === false ? null : newCatalogId();
   await env.DATA.put(
     `story:${id}`,
-    JSON.stringify({ uid, titulo: story.titulo, parrafos: story.parrafos, imageUrl, minutes: duration, createdAt, audio: [] }),
+    JSON.stringify({ uid, titulo: story.titulo, parrafos: story.parrafos, imageUrl, minutes: duration, createdAt, audio: [], catalogId }),
   );
   await addToLibrary(env, uid, user.plan, { id, titulo: story.titulo, minutes: duration, imageUrl, child: input.name, createdAt });
+  await addToCatalog(env, { catalogId, story, input, lessonId: body.lessonId, styleId: body.styleId, minutes: duration, createdAt });
 
   if (user.plan === 'free') {
     user.freeUsed = (user.freeUsed || 0) + 1;
@@ -324,6 +343,7 @@ async function handleGetStory(env, session, id) {
   const entry = await findEntry(env, uid, user.plan, id);
   const story = entry && (await env.DATA.get(`story:${id}`, 'json'));
   if (!story || story.uid !== uid) return json({ error: 'Este cuento ya no está en tu biblioteca.' }, 404);
+  await bump(env, story.catalogId, 'aperturas');
   return json({
     id,
     titulo: story.titulo,
@@ -334,6 +354,47 @@ async function handleGetStory(env, session, id) {
     audio: audioMap(story, id, user),
     shared: Boolean(story.shareToken),
   });
+}
+
+// Cuenta una escucha para el catálogo (el audio ya guardado se reproduce sin pasar por aquí).
+async function handlePlayed(env, session, id) {
+  const story = await env.DATA.get(`story:${id}`, 'json');
+  if (story && story.uid === session.uid) await bump(env, story.catalogId, 'escuchas');
+  return json({ ok: true });
+}
+
+// ---------- Catálogo para los libros (solo Alberto, con ADMIN_TOKEN) ----------
+// GET /api/admin/catalog?edad=4-5&moraleja=dark&limit=50&formato=csv
+
+async function handleCatalogExport(request, env, url) {
+  const auth = request.headers.get('Authorization') || '';
+  if (!env.ADMIN_TOKEN || !(await sameSecret(auth, `Bearer ${env.ADMIN_TOKEN}`))) return json({ error: 'No autorizado' }, 401);
+  if (!env.CATALOG) return json({ error: 'Falta la base de datos CATALOG' }, 503);
+  const range = url.searchParams.get('edad');
+  const lesson = url.searchParams.get('moraleja');
+  const rows = await topStories(env, {
+    range: AGE_RANGES.includes(range) ? range : null,
+    lesson: lesson && LESSONS[lesson] ? lesson : null,
+    limit: parseInt(url.searchParams.get('limit') || '50', 10) || 50,
+  });
+  if (url.searchParams.get('formato') !== 'csv') return json({ cuentos: rows });
+  const cols = ['puntos', 'rango_edad', 'moraleja', 'minutos', 'aperturas', 'escuchas', 'compartidos', 'aperturas_enlace', 'titulo', 'texto', 'id'];
+  const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = rows.map((r) => cols.map((c) => cell(c === 'texto' ? r.parrafos.join('\n\n') : r[c])).join(','));
+  return new Response(`\uFEFF${cols.join(',')}\n${lines.join('\n')}\n`, {
+    headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="cuentos-candidatos.csv"', 'Cache-Control': 'no-store' },
+  });
+}
+
+// Compara secretos sin dar pistas por el tiempo de respuesta.
+async function sameSecret(a, b) {
+  const enc = new TextEncoder();
+  const [ha, hb] = await Promise.all([a, b].map((x) => crypto.subtle.digest('SHA-256', enc.encode(x))));
+  const va = new Uint8Array(ha);
+  const vb = new Uint8Array(hb);
+  let diff = 0;
+  for (let i = 0; i < va.length; i++) diff |= va[i] ^ vb[i];
+  return diff === 0;
 }
 
 async function handleDeleteStory(env, session, id) {
@@ -355,6 +416,7 @@ async function handleShare(request, env, url, session, id) {
   if (!(story.audio || []).includes(audioKey)) {
     return json({ error: 'Escucha el cuento con esa voz antes de compartirlo.', code: 'no_audio' }, 400);
   }
+  if (!story.shareToken) await bump(env, story.catalogId, 'compartidos');
   const token = story.shareToken || newShareToken();
   await env.DATA.put(`share:${token}`, JSON.stringify({ uid, storyId: id, audioKey, createdAt: Date.now() }));
   if (story.shareToken !== token) {
@@ -387,6 +449,7 @@ async function handleShared(env, token) {
   if (owner && env.DEV_PLAN && env.ENVIRONMENT !== 'production') owner.plan = env.DEV_PLAN;
   // El enlace solo funciona mientras la familia siga en el VIP.
   if (!story || !owner || story.uid !== share.uid || !keepsForever(owner.plan)) return gone();
+  await bump(env, story.catalogId, 'aperturas_enlace');
   const audio = audioMap(story, share.storyId, owner);
   const voiceId = share.audioKey === `audio/${share.storyId}` ? '' : share.audioKey.split('/')[1];
   return json({
