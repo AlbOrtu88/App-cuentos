@@ -1,4 +1,4 @@
-// Cuentos Mágicos: lógica del navegador. Todo lo que cuesta dinero pasa por el Worker (/api/...).
+// Cuentacasa: lógica del navegador. Todo lo que cuesta dinero pasa por el Worker (/api/...).
 'use strict';
 
 const WPM = 125;
@@ -24,7 +24,15 @@ const STYLES = [
   { id: 'felt', plan: 'pro', label: 'Fieltro y lana' },
   { id: 'pencil', plan: 'pro', label: 'Lápiz de color' },
 ];
-const PER_MONTH = '<span class="text-xs font-normal text-slate-400">/mes</span>';
+const DURATION_NOTES = { 2: 'Para cuando ya bostezan', 3: 'El de cada noche', 5: 'Con calma y mimos', 10: 'Para una noche especial' };
+const LESSON_CARDS = [
+  { id: 'dark', label: 'Perder el miedo a la oscuridad' },
+  { id: 'share', label: 'Compartir' },
+  { id: 'patience', label: 'Tener paciencia' },
+  { id: 'kindness', label: 'Hacer amigos' },
+  { id: 'gratitude', label: 'Dar las gracias por el día' },
+];
+const PER_MONTH = '<span class="text-xs font-normal text-papel-400">/mes</span>';
 const PRICES = {
   annual: {
     standard: { price: `3,33 €${PER_MONTH}`, sub: 'Se factura 39,99 € al año', cta: '39,99 €/año' },
@@ -102,27 +110,33 @@ function render() {
   renderProfiles();
   renderDurations();
   renderStyles();
+  renderLessons();
   renderVoices();
+  renderSummary();
   $('manage-btn').classList.toggle('hidden', !state.hasBilling);
 }
 
 function renderQuota() {
   const badge = $('quota-badge');
-  badge.className = 'text-center text-[11px] font-medium py-1 px-3 rounded-full border';
+  badge.className = 'text-center text-xs font-medium py-1 px-3 rounded-full border';
   if (state.plan !== 'free') {
-    badge.textContent = `Plan ${PLAN_NAMES[state.plan]} · cuentos ilimitados`;
-    badge.classList.add('bg-emerald-500/10', 'text-emerald-300', 'border-emerald-500/30');
+    badge.textContent = `Plan ${PLAN_NAMES[state.plan]} · hasta 5 cuentos al día`;
+    badge.classList.add('bg-emerald-500/10', 'text-emerald-700', 'border-emerald-500/30');
   } else if (state.freeRemaining > 0) {
     badge.textContent = `Tienes ${state.freeRemaining} de 3 cuentos gratis`;
-    badge.classList.add('bg-amber-500/10', 'text-amber-300', 'border-amber-500/30');
+    badge.classList.add('bg-terracota-500/10', 'text-terracota-300', 'border-terracota-500/30');
   } else {
     badge.textContent = 'Has usado tus 3 cuentos gratis';
-    badge.classList.add('bg-rose-500/10', 'text-rose-300', 'border-rose-500/30');
+    badge.classList.add('bg-rose-500/10', 'text-rose-700', 'border-rose-500/30');
   }
 }
 
-function lockLabel(plan) {
-  return plan === 'standard' ? '⭐' : '👑';
+// Etiqueta de texto del plan que desbloquea una opción (sin emojis).
+function lockTag(plan) {
+  const tag = document.createElement('span');
+  tag.className = 'plan-tag';
+  tag.textContent = plan === 'standard' ? 'Estándar' : 'Pro';
+  return tag;
 }
 
 function renderDurations() {
@@ -133,17 +147,25 @@ function renderDurations() {
     const selected = state.duration === d.min;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `option-btn ${selected ? 'option-btn-active' : ''} ${locked ? 'option-btn-locked' : ''}`;
-    btn.textContent = `${locked ? lockLabel(d.plan) + ' ' : ''}${d.min} min`;
+    btn.className = `choice-card p-4 items-start text-left ${selected ? 'choice-card-active' : ''} ${locked ? 'choice-card-locked' : ''}`;
+    const big = document.createElement('span');
+    big.className = 'font-display text-2xl text-papel-50';
+    big.textContent = `${d.min} min`;
+    const note = document.createElement('span');
+    note.className = 'text-xs text-papel-400';
+    note.textContent = DURATION_NOTES[d.min] || '';
+    btn.append(big, note);
+    if (locked) btn.appendChild(lockTag(d.plan));
     btn.setAttribute('aria-pressed', String(selected));
     btn.addEventListener('click', () => {
       if (locked) return openPaywall(d.plan === 'standard' ? 'Los cuentos de 5 minutos están desde el plan Estándar.' : 'Los cuentos de 10 minutos están en los planes Pro y VIP.');
       state.duration = d.min;
       renderDurations();
+      renderSummary();
     });
     box.appendChild(btn);
   }
-  $('time-hint').textContent = `≈ ${state.duration * WPM} palabras`;
+  $('time-hint').textContent = `Unas ${state.duration * WPM} palabras, leídas con calma.`;
 }
 
 function renderStyles() {
@@ -154,13 +176,26 @@ function renderStyles() {
     const selected = state.styleId === s.id;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `option-btn text-left ${selected ? 'option-btn-active' : ''} ${locked ? 'option-btn-locked' : ''}`;
-    btn.textContent = `${locked ? lockLabel(s.plan) + ' ' : ''}${s.label}`;
+    btn.className = `choice-card ${selected ? 'choice-card-active' : ''} ${locked ? 'choice-card-locked' : ''}`;
+    const img = document.createElement('img');
+    img.src = `/img/estilos/${s.id}.webp`;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.className = 'choice-img';
+    const row = document.createElement('span');
+    row.className = 'flex items-center justify-between gap-1 px-3 py-2 w-full';
+    const name = document.createElement('span');
+    name.className = 'font-bold text-papel-100 leading-tight';
+    name.textContent = s.label;
+    row.appendChild(name);
+    if (locked) row.appendChild(lockTag(s.plan));
+    btn.append(img, row);
     btn.setAttribute('aria-pressed', String(selected));
     btn.addEventListener('click', () => {
       if (locked) return openPaywall(s.plan === 'standard' ? 'Este estilo está desde el plan Estándar.' : 'Este estilo está en los planes Pro y VIP.');
       state.styleId = s.id;
       renderStyles();
+      renderSummary();
     });
     box.appendChild(btn);
   }
@@ -177,11 +212,137 @@ function toast(message) {
   toastTimer = setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
+let loaderTimer;
+const LOADER_LINES = ['Escribiendo el cuento…', 'Buscando las palabras más bonitas…', 'Pintando la ilustración…', 'Casi listo, ve acomodando la almohada…'];
+
 function setBusy(busy) {
   state.busy = busy;
-  $('generate-btn').disabled = busy;
-  $('generate-btn').classList.toggle('opacity-50', busy);
+  $('generate-btn').classList.toggle('hidden', busy);
+  $('step-nav').classList.toggle('invisible', busy);
   $('loader').classList.toggle('hidden', !busy);
+  clearInterval(loaderTimer);
+  if (busy) {
+    let i = 0;
+    $('loader-text').textContent = LOADER_LINES[0];
+    loaderTimer = setInterval(() => {
+      i = Math.min(i + 1, LOADER_LINES.length - 1);
+      $('loader-text').textContent = LOADER_LINES[i];
+    }, 4000);
+  }
+}
+
+// ---------- Pasos para crear el cuento ----------
+// Una pantalla por decisión. Los campos son los mismos de siempre; solo cambia cuál se ve.
+
+const wizard = { index: 0 };
+const wizardSteps = () => [...document.querySelectorAll('#steps .step')];
+
+function renderLessons() {
+  const box = $('lesson-options');
+  const current = $('story-lesson').value;
+  box.innerHTML = '';
+  for (const l of LESSON_CARDS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `choice-card ${current === l.id ? 'choice-card-active' : ''}`;
+    btn.setAttribute('aria-pressed', String(current === l.id));
+    const img = document.createElement('img');
+    img.src = `/img/moralejas/${l.id}.webp`;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.className = 'choice-img';
+    const name = document.createElement('span');
+    name.className = 'px-3 py-2 font-bold text-sm text-papel-100 leading-tight text-left w-full';
+    name.textContent = l.label;
+    btn.append(img, name);
+    btn.addEventListener('click', () => {
+      $('story-lesson').value = l.id;
+      renderLessons();
+      renderSummary();
+      setTimeout(() => goToStep(wizard.index + 1), 220);
+    });
+    if (l.id === 'gratitude') btn.classList.add('col-span-2');
+    box.appendChild(btn);
+  }
+}
+
+// La edad va de 0 a 10; 0 es válido, así que no vale el «|| 5» de siempre.
+function readAge() {
+  const n = parseInt($('child-age').value, 10);
+  return Number.isNaN(n) ? 5 : Math.max(0, Math.min(10, n));
+}
+
+function ageLabel(age) {
+  if (age === 0) return 'menos de 1 año';
+  return age === 1 ? '1 año' : `${age} años`;
+}
+
+function renderSummary() {
+  const dl = $('story-summary');
+  if (!dl) return;
+  const lesson = LESSON_CARDS.find((l) => l.id === $('story-lesson').value);
+  const style = STYLES.find((s) => s.id === state.styleId);
+  const friends = [$('companion-name').value.trim(), $('pet-toy').value.trim()].filter(Boolean).join(' y ');
+  const rows = [
+    ['Para', `${$('child-name').value.trim() || 'Leo'}, ${ageLabel(readAge())}`],
+    ['Con', friends || 'Sin acompañantes'],
+    ['Aprende', lesson?.label || ''],
+    ['Dura', `${state.duration} minutos`],
+    ['Dibujo', style?.label || ''],
+  ];
+  dl.innerHTML = '';
+  rows.forEach(([k, v], i) => {
+    const dt = document.createElement('dt');
+    dt.className = 'text-papel-400';
+    dt.textContent = k;
+    const dd = document.createElement('dd');
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'text-left font-bold text-papel-100 underline decoration-papel-700 underline-offset-4 hover:decoration-terracota-400';
+    edit.textContent = v;
+    edit.addEventListener('click', () => goToStep(i === 4 ? 4 : i === 3 ? 3 : i === 2 ? 2 : i === 1 ? 1 : 0));
+    dd.appendChild(edit);
+    dl.append(dt, dd);
+  });
+}
+
+function goToStep(index) {
+  const steps = wizardSteps();
+  const next = Math.max(0, Math.min(index, steps.length - 1));
+  if (next > wizard.index && wizard.index === 0 && !$('child-name').value.trim()) {
+    $('child-name').focus();
+    return toast('Escribe su nombre para que el cuento sea suyo.');
+  }
+  const back = next < wizard.index;
+  wizard.index = next;
+  steps.forEach((el, i) => {
+    el.hidden = i !== next;
+    el.classList.remove('step-in', 'step-in-back');
+  });
+  const el = steps[next];
+  void el.offsetWidth;
+  el.classList.add(back ? 'step-in-back' : 'step-in');
+  $('step-back').hidden = next === 0;
+  $('step-next').hidden = next === steps.length - 1;
+  $('step-count').textContent = `Paso ${next + 1} de ${steps.length}`;
+  [...$('step-dots').children].forEach((d, i) => d.classList.toggle('step-dot-on', i <= next));
+  if (next === steps.length - 1) renderSummary();
+  el.querySelector('.step-title')?.focus({ preventScroll: true });
+  document.getElementById('steps').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function initWizard() {
+  const steps = wizardSteps();
+  $('step-dots').innerHTML = steps.map(() => '<li class="step-dot"></li>').join('');
+  steps.forEach((el) => el.querySelector('.step-title')?.setAttribute('tabindex', '-1'));
+  $('step-next').addEventListener('click', () => goToStep(wizard.index + 1));
+  $('step-back').addEventListener('click', () => goToStep(wizard.index - 1));
+  $('child-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') goToStep(1); });
+  const age = $('child-age');
+  const bump = (d) => { age.value = Math.max(0, Math.min(10, readAge() + d)); };
+  $('age-down').addEventListener('click', () => bump(-1));
+  $('age-up').addEventListener('click', () => bump(1));
+  goToStep(0);
 }
 
 // ---------- Generar ----------
@@ -194,7 +355,7 @@ async function generate() {
 
   const payload = {
     childName: $('child-name').value.trim() || 'Leo',
-    childAge: parseInt($('child-age').value, 10) || 5,
+    childAge: readAge(),
     companion: $('companion-name').value.trim(),
     petToy: $('pet-toy').value.trim(),
     lessonId: $('story-lesson').value,
@@ -229,7 +390,7 @@ function showStory(story, from = 'creator') {
   state.from = from;
   stopAudio();
   $('story-title').textContent = story.titulo;
-  $('reading-badge').textContent = `⏱ ${story.minutes} min`;
+  $('reading-badge').textContent = `${story.minutes} min`;
 
   const content = $('story-content');
   content.innerHTML = '';
@@ -275,7 +436,7 @@ function closeReader() {
 // Gratis o si falla: la voz del propio dispositivo, párrafo a párrafo.
 
 function setAudioButton(playing, loading = false) {
-  $('audio-icon').textContent = loading ? '⏳' : playing ? '⏸' : '🔊';
+  $('audio-icon').textContent = loading ? '…' : playing ? '❚❚' : '▶\uFE0E';
   $('audio-label').textContent = loading ? (state.voiceId ? 'Preparando voz (1 min)' : 'Preparando') : playing ? 'Pausar' : 'Escuchar';
 }
 
@@ -392,7 +553,7 @@ function startSpeech() {
 
 function highlight(index) {
   document.querySelectorAll('#story-content p').forEach((p) => {
-    p.classList.toggle('bg-amber-400/10', Number(p.dataset.index) === index);
+    p.classList.toggle('bg-terracota-400/10', Number(p.dataset.index) === index);
   });
 }
 
@@ -413,12 +574,12 @@ function renderVoices() {
   list.innerHTML = '';
   for (const v of state.voices) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-1 bg-purple-500/10 border border-purple-500/30 text-purple-200 text-xs rounded-full pl-3 pr-1 py-0.5';
+    li.className = 'flex items-center gap-1 bg-lavanda-500/10 border border-lavanda-500/30 text-lavanda-200 text-xs rounded-full pl-3 pr-1 py-1';
     const name = document.createElement('span');
     name.textContent = v.name;
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'px-1.5 text-purple-300 hover:text-rose-300';
+    del.className = 'tap-chip text-lavanda-300 hover:text-rose-700';
     del.setAttribute('aria-label', `Borrar la voz de ${v.name}`);
     del.textContent = '✕';
     del.addEventListener('click', () => askAdult(() => deleteVoice(v)));
@@ -663,15 +824,15 @@ function renderProfiles() {
   const vip = allows('vip');
   for (const p of state.profiles) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs rounded-full pl-1 pr-1 py-0.5';
+    li.className = 'flex items-center gap-1 bg-terracota-500/10 border border-terracota-500/30 text-terracota-200 text-xs rounded-full pl-1 pr-1 py-1';
     const pick = document.createElement('button');
     pick.type = 'button';
-    pick.className = 'px-2 py-0.5 hover:text-white';
-    pick.textContent = `${p.name} · ${p.age}`;
+    pick.className = 'tap-chip px-2 hover:text-papel-50';
+    pick.textContent = `${p.name} · ${ageLabel(p.age)}`;
     pick.addEventListener('click', () => applyProfile(p));
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'px-1.5 text-amber-300/70 hover:text-rose-300';
+    del.className = 'tap-chip text-terracota-300/70 hover:text-rose-700';
     del.setAttribute('aria-label', `Borrar el perfil de ${p.name}`);
     del.textContent = '✕';
     del.addEventListener('click', () => deleteProfile(p));
@@ -697,7 +858,7 @@ function saveProfile() {
   if (!name) return toast('Escribe primero el nombre del peque.');
   const profile = {
     name: name.slice(0, 40),
-    age: parseInt($('child-age').value, 10) || 5,
+    age: readAge(),
     companion: $('companion-name').value.trim().slice(0, 40),
     petToy: $('pet-toy').value.trim().slice(0, 40),
   };
@@ -751,7 +912,7 @@ function renderLibrary(forever, offline, isOffline) {
     note.append('Se guardan los cuentos de los últimos 30 días. ');
     const more = document.createElement('button');
     more.type = 'button';
-    more.className = 'text-purple-300 underline';
+    more.className = 'text-lavanda-300 underline';
     more.textContent = 'Con el VIP, para siempre y sin conexión.';
     more.addEventListener('click', () => openPaywall('Guarda todos los cuentos para siempre y escúchalos sin conexión con el VIP.'));
     note.appendChild(more);
@@ -761,26 +922,27 @@ function renderLibrary(forever, offline, isOffline) {
   list.innerHTML = '';
   for (const s of state.library) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-3 bg-slate-950/60 border border-slate-800 rounded-2xl p-2';
+    li.className = 'flex items-center gap-3 bg-papel-950/60 border border-papel-800 rounded-2xl p-2';
     const open = document.createElement('button');
     open.type = 'button';
     open.className = 'flex flex-1 items-center gap-3 text-left min-w-0';
     const thumb = document.createElement(s.imageUrl ? 'img' : 'div');
-    thumb.className = 'w-14 h-14 rounded-xl object-cover bg-slate-800 shrink-0 flex items-center justify-center text-xl';
+    thumb.className = 'w-14 h-14 rounded-xl object-cover bg-papel-800 shrink-0 flex items-center justify-center text-xl';
     if (s.imageUrl) {
       thumb.src = s.imageUrl;
       thumb.alt = '';
       thumb.loading = 'lazy';
     } else {
-      thumb.textContent = '🌙';
+      thumb.textContent = (item.titulo || 'C').trim().charAt(0).toUpperCase();
+      thumb.classList.add('font-display', 'text-terracota-300');
     }
     const text = document.createElement('div');
     text.className = 'min-w-0';
     const title = document.createElement('p');
-    title.className = 'text-sm font-semibold text-amber-100 truncate';
+    title.className = 'text-sm font-semibold text-terracota-100 truncate';
     title.textContent = s.titulo;
     const meta = document.createElement('p');
-    meta.className = 'text-[11px] text-slate-400';
+    meta.className = 'text-xs text-papel-400';
     const date = new Date(s.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     meta.textContent = [s.child, `${s.minutes} min`, date, offline[s.id] ? '⬇ sin conexión' : ''].filter(Boolean).join(' · ');
     text.append(title, meta);
@@ -790,7 +952,7 @@ function renderLibrary(forever, offline, isOffline) {
     if (!isOffline) {
       const del = document.createElement('button');
       del.type = 'button';
-      del.className = 'px-2 text-slate-500 hover:text-rose-300';
+      del.className = 'tap-icon text-papel-500 hover:text-rose-700';
       del.setAttribute('aria-label', `Borrar ${s.titulo}`);
       del.textContent = '✕';
       del.addEventListener('click', () => askAdult(() => deleteSavedStory(s)));
@@ -823,8 +985,8 @@ function renderReaderActions() {
   const vip = allows('vip');
   const offline = readStore(OFFLINE_KEY, {});
   const saved = Boolean(offline[state.story.id]);
-  $('btn-offline').textContent = `${vip ? '' : '👑 '}${saved ? '✓ Guardado sin conexión' : '⬇ Guardar sin conexión'}`;
-  $('btn-share').textContent = `${vip ? '' : '👑 '}💌 Enviar a los abuelos`;
+  $('btn-offline').textContent = `${saved ? 'Guardado sin conexión' : 'Guardar sin conexión'}${vip ? '' : ' (VIP)'}`;
+  $('btn-share').textContent = `Enviar a los abuelos${vip ? '' : ' (VIP)'}`;
 }
 
 // VIP: guarda el cuento, su dibujo y su audio en el dispositivo para el coche o el avión.
@@ -915,7 +1077,7 @@ async function copyShareLink() {
 
 async function sendShareLink() {
   try {
-    await navigator.share({ title: state.story?.titulo || 'Un cuento', text: 'Escucha el cuento de esta noche 🌙', url: $('share-url').value });
+    await navigator.share({ title: state.story?.titulo || 'Un cuento', text: 'Escucha el cuento de esta noche', url: $('share-url').value });
   } catch {
     /* el usuario cerró el menú */
   }
@@ -962,7 +1124,7 @@ function closeBooksNotice() {
 // Siempre se abre con el VIP elegido: es el plan que queremos que compare primero.
 function openPaywall(reason) {
   state.selectedPlan = state.voicePlansEnabled ? 'vip' : 'standard';
-  $('paywall-reason').textContent = reason || 'Cuentos ilimitados, narrados con voz natural y con valores.';
+  $('paywall-reason').textContent = reason || 'Hasta 5 cuentos al día, narrados con voz natural y con valores.';
   $('checkout-error').classList.add('hidden');
   $('desist-consent').checked = false;
   $('btn-cta').disabled = true;
@@ -1071,7 +1233,7 @@ async function handleCheckoutReturn() {
   for (let i = 0; i < 6; i++) {
     await new Promise((r) => setTimeout(r, 2000));
     await loadMe();
-    if (state.plan !== 'free') return toast('¡Listo! Ya tienes cuentos ilimitados.');
+    if (state.plan !== 'free') return toast('¡Listo! Ya puedes crear hasta 5 cuentos al día.');
   }
   toast('El pago se ha recibido. Si no ves el plan activo, recarga en un minuto.');
 }
@@ -1200,6 +1362,7 @@ function bind() {
 state.profiles = readStore(PROFILES_KEY, []);
 bind();
 render();
+initWizard();
 loadMe().then(handleCheckoutReturn);
 
 if ('serviceWorker' in navigator) {

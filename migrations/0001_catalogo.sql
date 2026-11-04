@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS cuentos (
   id TEXT PRIMARY KEY,
   titulo TEXT NOT NULL,
   parrafos TEXT NOT NULL,          -- JSON con los párrafos ya anonimizados
-  rango_edad TEXT NOT NULL,        -- '2-3', '4-5', '6-7' u '8-10'
+  rango_edad TEXT NOT NULL,        -- '0-1', '2-3', '4-5', '6-7' u '8-10'
   moraleja TEXT NOT NULL,          -- id de LESSONS (dark, share, ...)
   minutos INTEGER NOT NULL,
   estilo TEXT NOT NULL,

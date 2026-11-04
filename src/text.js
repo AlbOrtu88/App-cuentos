@@ -16,7 +16,7 @@ export function cleanField(value, fallback, max = 40) {
 export function cleanAge(value) {
   const n = parseInt(value, 10);
   if (Number.isNaN(n)) return 5;
-  return Math.min(Math.max(n, 2), 10);
+  return Math.min(Math.max(n, 0), 10);
 }
 
 // Quita nombres propios del texto que se manda al generador de imágenes.

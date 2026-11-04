@@ -19,9 +19,10 @@ const COUNTERS = new Set(['aperturas', 'escuchas', 'compartidos', 'aperturas_enl
 // Puntuación para elegir candidatos: escuchar y compartir pesan más que abrir.
 export const SCORE_SQL = 'aperturas + 2 * escuchas + 3 * compartidos + 2 * aperturas_enlace';
 
-export const AGE_RANGES = ['2-3', '4-5', '6-7', '8-10'];
+export const AGE_RANGES = ['0-1', '2-3', '4-5', '6-7', '8-10'];
 
 export function ageRange(age) {
+  if (age <= 1) return '0-1';
   if (age <= 3) return '2-3';
   if (age <= 5) return '4-5';
   if (age <= 7) return '6-7';

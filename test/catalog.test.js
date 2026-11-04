@@ -27,7 +27,7 @@ test('los nombres inventados se quitan en todo el cuento', () => {
 });
 
 test('rangos de edad', () => {
-  assert.deepEqual([2, 3, 4, 5, 6, 7, 8, 10].map(ageRange), ['2-3', '2-3', '4-5', '4-5', '6-7', '6-7', '8-10', '8-10']);
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 10].map(ageRange), ['0-1', '0-1', '2-3', '2-3', '4-5', '4-5', '6-7', '6-7', '8-10', '8-10']);
 });
 
 test('guarda la copia anónima con un id aleatorio y sin datos del usuario', async () => {

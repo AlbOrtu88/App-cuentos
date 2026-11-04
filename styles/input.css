@@ -2,15 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* El atributo hidden siempre gana a las clases de diseño */
+  [hidden] { display: none !important; }
+  /* Títulos con la letra de libro ilustrado; sin negrita falsa porque Young Serif solo tiene un peso */
+  h1, h2 { @apply font-display font-normal; text-wrap: balance; }
+  /* Foco visible para teclado y lectores de pantalla */
+  :focus-visible { outline: 2px solid theme('colors.melocoton.500'); outline-offset: 2px; border-radius: 0.5rem; }
+  /* Pasos: entran deslizándose un poco hacia el lado al que avanzas */
+  @keyframes step-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  @keyframes step-in-back { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+  @keyframes float-soft { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(2deg); } }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(0.96); } 100% { transform: scale(1); } }
+  /* Sin animaciones si el móvil tiene «reducir movimiento» */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
+}
+
 @layer components {
-  .field-label { @apply block text-xs font-semibold text-slate-300 mb-1; }
-  .field { @apply w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400; }
-  .option-btn { @apply py-2 px-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 transition hover:border-slate-600; }
-  .option-btn-active { @apply border-amber-400 bg-amber-400/10 text-amber-200 font-semibold; }
-  .option-btn-locked { @apply opacity-60 text-slate-500; }
-  .plan-card { @apply border-2 border-slate-800 transition; }
-  .plan-card-active { @apply border-amber-400; }
+  /* Pasos para crear el cuento */
+  .step { @apply flex flex-col gap-4; }
+  .step-in { animation: step-in 0.32s cubic-bezier(.2,.7,.2,1) both; }
+  .step-in-back { animation: step-in-back 0.32s cubic-bezier(.2,.7,.2,1) both; }
+  .step-title { @apply font-display text-2xl leading-tight text-papel-50 outline-none; text-wrap: balance; }
+  .step-hint { @apply -mt-2 text-sm text-papel-400; }
+  /* Atrás / Siguiente siempre a la vista, pegados al borde de abajo de la pantalla */
+  .step-nav { @apply sticky bottom-0 z-10 -mx-5 mt-5 flex items-center gap-3 rounded-b-3xl border-t border-papel-800 bg-papel-900/95 px-5 pt-3 backdrop-blur; padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+  .step-dot { @apply h-1.5 flex-1 rounded-full bg-papel-800 transition-colors duration-300; }
+  .step-dot-on { @apply bg-terracota-500; }
+  .field-big { @apply text-lg py-3 px-4 rounded-2xl; }
+  .stepper-btn { @apply inline-flex items-center justify-center h-11 w-11 rounded-full border-2 border-papel-800 bg-papel-950 text-2xl font-bold text-terracota-400 hover:border-terracota-400 active:scale-95 transition; }
+  /* Tarjetas con dibujo para elegir (moraleja, duración, estilo) */
+  .choice-card { @apply relative flex flex-col items-center overflow-hidden rounded-2xl border-2 border-papel-800 bg-papel-950 transition hover:border-papel-700; }
+  .choice-card:active { animation: pop 0.2s ease-out; }
+  .choice-card-active { @apply border-terracota-500 bg-terracota-500/10; box-shadow: 0 0 0 3px theme('colors.terracota.500 / 15%'); }
+  .choice-card-locked { @apply border-dashed; }
+  .choice-img { @apply w-full aspect-square object-cover; }
+  .col-span-2 .choice-img { @apply aspect-[2/1]; }
+  .loader-art { animation: float-soft 3.2s ease-in-out infinite; box-shadow: 0 0 0 6px theme('colors.papel.900'), 0 0 0 8px theme('colors.terracota.500 / 30%'); }
+
+  /* Zonas táctiles cómodas para dedos cansados a oscuras (44 px) */
+  .tap { @apply inline-flex items-center justify-center min-h-[44px] px-2; }
+  .tap-icon { @apply inline-flex items-center justify-center min-h-[44px] min-w-[44px]; }
+  .tap-chip { @apply inline-flex items-center justify-center min-h-[32px] min-w-[32px]; }
+  .field-label { @apply block text-xs font-semibold text-papel-300 mb-1; }
+  .field { @apply min-h-[44px] w-full bg-papel-950 border border-papel-800 rounded-xl px-3 py-2 text-sm text-papel-100 placeholder-papel-600 focus:outline-none focus:border-terracota-400 focus:ring-1 focus:ring-terracota-400; }
+  .option-btn { @apply inline-flex items-center justify-center gap-1.5 flex-wrap min-h-[44px] py-2 px-2.5 rounded-xl border border-papel-800 bg-papel-950 text-papel-300 transition hover:border-papel-600; }
+  .option-btn-active { @apply border-terracota-400 bg-terracota-400/10 text-terracota-200 font-semibold; }
+  .option-btn-locked { @apply text-papel-500 border-dashed; }
+  /* Plan que desbloquea algo: texto pequeño en lavanda, en lugar de coronas y estrellas */
+  .plan-tag { @apply inline-block align-middle text-xs font-bold leading-none px-1.5 py-1 rounded-md bg-lavanda-500/10 text-lavanda-200; }
+  .plan-card { @apply border-2 border-papel-800 transition; }
+  .plan-card-active { @apply border-terracota-400; }
   .plan-card-disabled { @apply opacity-70 cursor-not-allowed; }
-  .period-btn { @apply px-4 py-1.5 rounded-xl text-xs font-semibold text-slate-400 transition; }
-  .period-btn-active { @apply bg-amber-400 text-slate-950; }
+  .period-btn { @apply min-h-[40px] px-4 py-1.5 rounded-xl text-xs font-semibold text-papel-400 transition; }
+  .period-btn-active { @apply bg-terracota-400 text-papel-950; }
 }

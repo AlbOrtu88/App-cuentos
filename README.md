@@ -1,9 +1,9 @@
-# Cuentos Mágicos
+# Cuentacasa
 
 PWA de cuentos infantiles personalizados para la hora de dormir. Un único Worker de Cloudflare sirve la app (carpeta `public/`) y la API (`src/`).
 
 - **Texto**: Gemini 2.5 Flash, sin razonamiento y con salida JSON.
-- **Ilustración**: FLUX schnell en fal.ai (una por cuento). Sin `FAL_KEY` usa Pollinations, solo para pruebas.
+- **Ilustración**: Gemini 3.1 Flash Lite Image (una por cuento, ≈ 0,034 $), elegido en `IMAGE_MODEL`. Con `IMAGE_MODEL="flux"` usa FLUX schnell en fal.ai; sin claves, Pollinations (solo para pruebas).
 - **Narrador** (planes de pago): Google Cloud TTS Chirp 3 HD. El MP3 se guarda en R2 y repetir un cuento no cuesta nada.
 - **Voces de la familia** (Pro y VIP): Chatterbox Multilingual en fal.ai. El Pro guarda 1 voz y el VIP hasta 6 (papá, mamá, abuelos, tíos...); se elige cuál narra cada cuento.
 - **Plan gratis**: 3 cuentos y voz del propio móvil.
@@ -25,7 +25,7 @@ El plan y la cuota se guardan en el servidor (KV), no en el navegador.
 | | Gratis | Estándar | Pro | VIP Familiar |
 |-|-|-|-|-|
 | Precio | 0 € | 4,99 €/mes o 39,99 €/año | 12,99 €/mes o 99,99 €/año | 14,99 €/mes o 119,99 €/año |
-| Cuentos | 3 | Ilimitados (20 al día) | Ilimitados | Ilimitados |
+| Cuentos | 3 | Hasta 5 al día | Hasta 5 al día | Hasta 5 al día |
 | Duración | 2 y 3 min | + 5 min | + 10 min | + 10 min |
 | Estilos | 1 | 4 | 10 | 10 |
 | Narrador natural | Voz del móvil | 1 h al mes | 2 h 30 min al mes | 3 h 20 min al mes en total |
@@ -96,7 +96,7 @@ Con `MOCK_AI=1` el cuento es de prueba, no hay imagen y la voz cae a la del nave
 
 ## Catálogo para los libros de KDP
 
-Cada cuento nuevo guarda una copia anónima en la base de datos D1 `cuentos-catalogo` (tabla `cuentos`), salvo que la familia lo desactive en Ajustes («Permitir que mis cuentos inspiren libros»). Al guardarla se cambian el nombre del niño por `{NOMBRE}`, el acompañante por `{ACOMPAÑANTE}`, el juguete por `{JUGUETE}` y cualquier otro nombre propio por `{OTRO_NOMBRE}`. Solo guarda el rango de edad (2-3, 4-5, 6-7, 8-10), la moraleja, la duración, el estilo y el mes. El id es aleatorio y no se puede relacionar con el usuario.
+Cada cuento nuevo guarda una copia anónima en la base de datos D1 `cuentos-catalogo` (tabla `cuentos`), salvo que la familia lo desactive en Ajustes («Permitir que mis cuentos inspiren libros»). Al guardarla se cambian el nombre del niño por `{NOMBRE}`, el acompañante por `{ACOMPAÑANTE}`, el juguete por `{JUGUETE}` y cualquier otro nombre propio por `{OTRO_NOMBRE}`. Solo guarda el rango de edad (0-1, 2-3, 4-5, 6-7, 8-10), la moraleja, la duración, el estilo y el mes. El id es aleatorio y no se puede relacionar con el usuario.
 
 Cuenta cuántas veces se reabre, se escucha, se comparte con los abuelos y se abre el enlace de los abuelos. Los puntos son `aperturas + 2 × escuchas + 3 × compartidos + 2 × aperturas del enlace`.
 
@@ -107,7 +107,7 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
   "https://TU-DOMINIO/api/admin/catalog?edad=4-5&limit=50&formato=csv" -o candidatos-4-5.csv
 ```
 
-Filtros: `edad` (2-3, 4-5, 6-7, 8-10), `moraleja` (dark, share, patience, kindness, gratitude), `limit` (hasta 500) y `formato=csv` (sin él, JSON).
+Filtros: `edad` (0-1, 2-3, 4-5, 6-7, 8-10), `moraleja` (dark, share, patience, kindness, gratitude), `limit` (hasta 500) y `formato=csv` (sin él, JSON).
 
 Antes de publicar, lee y edita cada cuento: la anonimización automática puede dejar algún detalle, y la edición humana es lo que da derechos de autor al libro. En KDP hay que declarar que el texto está generado con IA, y las ilustraciones del libro se generan de nuevo (nunca las de las familias).
 
@@ -116,7 +116,7 @@ Antes de publicar, lee y edita cada cuento: la anonimización automática puede 
 | Variable | Por defecto | Qué controla |
 |-|-|-|
 | `FREE_DAILY_IP_LIMIT` | 10 | Cuentos gratis por IP y día |
-| `PAID_DAILY_LIMIT` | 20 | Cuentos por cuenta de pago y día |
+| `PAID_DAILY_LIMIT` | 5 | Cuentos por cuenta de pago y día |
 
 Los minutos de narrador y de voces de la familia de cada plan están en `PLAN_LIMITS` (`src/config.js`). Si alguien baja a un plan con menos voces, las que sobran se borran a los 30 días.
 

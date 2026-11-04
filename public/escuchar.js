@@ -20,7 +20,7 @@
     return fail('No hay conexión. Inténtalo de nuevo en un momento.');
   }
 
-  document.title = `${data.titulo} · Cuentos Mágicos`;
+  document.title = `${data.titulo} · Cuentacasa`;
   $('shared-title').textContent = data.titulo;
   for (const text of data.parrafos) {
     const p = document.createElement('p');
